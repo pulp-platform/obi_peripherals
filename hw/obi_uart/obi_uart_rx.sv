@@ -56,7 +56,10 @@ module obi_uart_rx import obi_uart_pkg::*; #()
   // FIFO trigger
   logic [3:0] tl_characters; 
   // FIFO timeout
-  logic [5:0] timeout_trigger; 
+  // longest character: 1 start, 8 data, 1 parity, 2 stop -> 12bit
+  // timeout occurs after 4 characters -> 48bit -> $clog2(48) = 6
+  logic [3:0] character_length;
+  logic [5:0] timeout_level;
   logic [5:0] timeout_count_q, timeout_count_d;
 
   //--Write-Read-FIFO-or-Write-RHR----------------------------------------------------------------
@@ -91,7 +94,8 @@ module obi_uart_rx import obi_uart_pkg::*; #()
   //----------------------------------------------------------------------------------------------
 
   //--Clear-Counter-------------------------------------------------------------------------------
-  assign timing_clear = ((timing_count == 5'b01111) && oversample_rate_edge_i) | (timing_init_clear) ? 1'b1 : 1'b0;
+  assign timing_clear = ((timing_count == 5'b01111) && oversample_rate_edge_i)
+                        | (timing_init_clear) ? 1'b1 : 1'b0;
 
   counter #(
     .WIDTH          (5), 
@@ -211,7 +215,7 @@ module obi_uart_rx import obi_uart_pkg::*; #()
     
     timeout_count_d = timeout_count_q;
     timeout_o         = 1'b0; // timeout_o
-    timeout_trigger = '0;
+    timeout_level = '0;
     
     fifo_error_index_d = fifo_error_index_q; // FIFO Error
 
@@ -507,7 +511,7 @@ module obi_uart_rx import obi_uart_pkg::*; #()
           fifo_data_i     = {parity_err_q, framing_err_q, break_interrupt, rsr_q}; // 11 Bits 
 
           if (parity_err_q | framing_err_q | break_interrupt) begin
-            fifo_error_index_d     = fifo_usage;   
+            fifo_error_index_d         = fifo_usage;
             reg_write_o.fifo_err       = 1'b1;
             reg_write_o.fifo_err_valid = 1'b1;
           end
@@ -516,28 +520,25 @@ module obi_uart_rx import obi_uart_pkg::*; #()
       //------------------------------------------------------------------------------------------
       // FIFO timeout
       //------------------------------------------------------------------------------------------
-      // timeout_trigger = (1 Startbit + 8 Databits + 1 Paritybit + 2 Stopbits) * 4
-      timeout_trigger = 6'b000001 + 6'b001000 + 6'b000001 + 6'b000010; // timeout trigger Level
-      timeout_trigger = timeout_trigger << 2; // Multiply by 4
+      // timeout_level = (character_length * 4) +1
+      character_length = (6'd02 +word_len_bits +reg_read_i.lcr.par_en +reg_read_i.lcr.stop_bits);
+      timeout_level = (character_length << 2) + 6'd01;
 
-      if (reg_read_i.fcr.fifo_en & (~fifo_empty)) begin
-        if (write_init | reg_read_i.obi_read_rhr) begin
+      if (reg_read_i.obi_read_rhr | write_init) begin
           timeout_count_d = '0;
-        end else if (baud_rate_edge_i) begin
+      end else if (~fifo_empty) begin
+        if (baud_rate_edge_i) begin
           timeout_count_d = timeout_count_q + 1;
-          if (timeout_trigger == timeout_count_q) begin
-            timeout_o = 1'b1;
-            timeout_count_d = '0;
-          end
         end
-      end else begin
-        timeout_count_d = 1'b0; 
+        if (timeout_count_q == timeout_level) begin
+            timeout_o = 1'b1;
+          timeout_count_d = timeout_count_q;
+        end
       end
 
-    end
+    end // fifo enabled
 
-
-  end
+  end // always_comb
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // FIFO & WRITE RHR Sequential //
