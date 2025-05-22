@@ -38,48 +38,33 @@ module obi_uart_interrupts import obi_uart_pkg::*; #()
     logic       mstat;     // Modem Status Interrupt - Changes in Modem Line
   } reg_intrpt_t;
 
-  reg_intrpt_t intrpt_reg_d, intrpt_reg_q, intrpt;
+  reg_intrpt_t intrpt_reg_d, intrpt_reg_q;
 
 
   /////////////////////////////////////////////////////////////////////////////////////////////////
-  // Generare Combinatorial Interrupt Signals //
+  // Generare Interrupt Signals //
   /////////////////////////////////////////////////////////////////////////////////////////////////
   always_comb begin
-    //--Defaults-----------------------------------------------------------------------------------
-    intrpt = '0;
-
     //--Receive-Line-Status-Interrupt--------------------------------------------------------------
-    intrpt.rls = reg_read_i.ier.rlstat & (reg_write_i.rx.overrun_err | reg_write_i.rx.par_err |
-                  reg_write_i.rx.frame_err | reg_write_i.rx.break_intrpt);
+    intrpt_reg_d.rls = reg_read_i.ier.rlstat & (reg_write_i.rx.overrun_err | reg_write_i.rx.par_err |
+                        reg_write_i.rx.frame_err | reg_write_i.rx.break_intrpt);
 
     //--Receive-Data-Ready-Interrupt---------------------------------------------------------------
     if (reg_read_i.fcr.fifo_en) begin
-      intrpt.rxdr = reg_read_i.ier.dtr & rx_fifo_trigger; // data ready in FIFO mode
+      intrpt_reg_d.rxdr = reg_read_i.ier.dtr & rx_fifo_trigger; // data ready in FIFO mode
     end else begin
-      intrpt.rxdr = reg_read_i.ier.dtr & reg_write_i.rx.data_ready; // data ready in THR mode
+      intrpt_reg_d.rxdr = reg_read_i.ier.dtr & reg_write_i.rx.data_ready; // data ready in THR mode
     end
 
     //--Character-Timeout-Interrupt----------------------------------------------------------------
-    intrpt.timeout = reg_read_i.fcr.fifo_en & reg_read_i.ier.dtr & rx_timeout;
+    intrpt_reg_d.timeout = reg_read_i.fcr.fifo_en & reg_read_i.ier.dtr & rx_timeout;
 
     //--THR-Empty-Interrupt------------------------------------------------------------------------
-    intrpt.thr_empty = reg_read_i.ier.thr_empty & reg_write_i.tx.thr_empty;
+    intrpt_reg_d.thr_empty = reg_read_i.ier.thr_empty & reg_write_i.tx.thr_empty;
 
     //--Modem-Status-Interrupt---------------------------------------------------------------------
-    intrpt.mstat = reg_read_i.ier.mstat & (reg_write_i.modem.d_cts | reg_write_i.modem.d_dsr |
-                    reg_write_i.modem.te_ri | reg_write_i.modem.d_cd);
-  end
-
-  /////////////////////////////////////////////////////////////////////////////////////////////////
-  // Update Interrupt Registers //
-  /////////////////////////////////////////////////////////////////////////////////////////////////
-  always_comb begin
-    intrpt_reg_d.rls       = intrpt.rls       | intrpt_reg_q.rls;
-    intrpt_reg_d.rxdr      = intrpt.rxdr      | intrpt_reg_q.rxdr;
-    intrpt_reg_d.timeout   = intrpt.timeout   | intrpt_reg_q.timeout;
-    intrpt_reg_d.thr_empty = intrpt.thr_empty | intrpt_reg_q.thr_empty;
-    intrpt_reg_d.mstat     = intrpt.mstat     | intrpt_reg_q.mstat;
-
+    intrpt_reg_d.mstat = reg_read_i.ier.mstat & (reg_write_i.modem.d_cts | reg_write_i.modem.d_dsr |
+                          reg_write_i.modem.te_ri | reg_write_i.modem.d_cd);
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // Interrupt Reset Condition //
@@ -110,33 +95,29 @@ module obi_uart_interrupts import obi_uart_pkg::*; #()
   ///////////////////////////////////////////////////////////////////////////////////////////////
   always_comb begin
     //--Defaults-----------------------------------------------------------------------------------
-    reg_isr_o.status   = 1'b1;  // no interrupt pending
     reg_isr_o.id       = 3'b000;
     reg_isr_o.fifos_en = 2'b11; // Indicate 16550A FIFO support
     reg_isr_o.unused4  = 1'b0;
     reg_isr_o.unused5  = 1'b0;
 
+    reg_isr_o.status   = 1'b1;  // no interrupt pending
+
     //--Priority-Encoder---------------------------------------------------------------------------
     // 1. Priority Level
     if (intrpt_reg_q.rls) begin
       reg_isr_o.id     = 3'b011;
-      reg_isr_o.status = 1'b0;
     // 2. Priority Level
     end else if (intrpt_reg_q.rxdr) begin
       reg_isr_o.id     = 3'b010;
-      reg_isr_o.status = 1'b0;
     // 2. Priority Level
     end else if (intrpt_reg_q.timeout) begin
       reg_isr_o.id     = 3'b110;
-      reg_isr_o.status = 1'b0;
     // 3. Priority Level
     end else if (intrpt_reg_q.thr_empty) begin
       reg_isr_o.id     = 3'b001;
-      reg_isr_o.status = 1'b0;
     // 4. Priority Level
     end else if (intrpt_reg_q.mstat) begin
       reg_isr_o.id     = 3'b000;
-      reg_isr_o.status = 1'b0;
     end
 
   end
