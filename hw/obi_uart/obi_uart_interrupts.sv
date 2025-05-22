@@ -100,7 +100,7 @@ module obi_uart_interrupts import obi_uart_pkg::*; #()
     reg_isr_o.unused4  = 1'b0;
     reg_isr_o.unused5  = 1'b0;
 
-    reg_isr_o.status   = 1'b1;  // no interrupt pending
+    reg_isr_o.status   = ~( |intrpt_reg_q );  // 0: interrupt present; 1: no interrupt
 
     //--Priority-Encoder---------------------------------------------------------------------------
     // 1. Priority Level
