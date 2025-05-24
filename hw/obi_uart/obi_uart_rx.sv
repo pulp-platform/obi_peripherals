@@ -415,11 +415,14 @@ module obi_uart_rx import obi_uart_pkg::*; #()
     // Write RHR
     //--------------------------------------------------------------------------------------------
     if (reg_read_i.fcr.fifo_en) begin // FIFO enabled
+      reg_write_o.data_ready = 1'b0;
+      reg_write_o.dr_valid   = 1'b1;
 
       //--Write-FIFO-to-RHR-----------------------------------------------------------------------
       if ((~rhr_full_q) & (~fifo_empty)) begin
         reg_write_o.rhr      = fifo_data_o[7:0];
-        reg_write_o.rhr_valid              = 1'b1;
+        reg_write_o.rhr_valid            = 1'b1;
+        reg_write_o.data_ready           = 1'b1;
         rhr_full_d                       = 1'b1;
 
         // If Fifo Enabled, always set LSR bits with the Data on top of the FIFO
@@ -435,13 +438,6 @@ module obi_uart_rx import obi_uart_pkg::*; #()
           fifo_error_index_d = fifo_error_index_q - 'b0001;
         end
       end
-
-      /*if (rhr_full_q) begin
-        reg_write_o.lsr_data_ready = 1'b1;
-        reg_write_o.lsr_valid[0]   = 1'b1;
-      end*/
-      reg_write_o.data_ready = rhr_full_q;
-      reg_write_o.dr_valid   = 1'b1;
 
     end else begin // FIFO disabled : RHR acts as 1-Byte Holding Register
 
