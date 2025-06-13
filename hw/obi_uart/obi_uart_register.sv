@@ -82,7 +82,7 @@ module obi_uart_register import obi_uart_pkg::*; #(
   tx_reg_write_t write_tx;
 
   assign write_tx = reg_write_i.tx;
-  assign write_rx = reg_write_i.tx;
+  assign write_rx = reg_write_i.rx;
 
   // output current register values
   assign reg_read_o.thr = reg_q.THR;
@@ -96,10 +96,6 @@ module obi_uart_register import obi_uart_pkg::*; #(
 
   //-- Internal updates to registers -------------------------------------------------------------
   always_comb begin : hw_update
-    // shorthand signal names
-    rx_reg_write_t write_rx = reg_write_i.rx;
-    tx_reg_write_t write_tx = reg_write_i.tx;
-
     // default
     new_reg = reg_q;
 
