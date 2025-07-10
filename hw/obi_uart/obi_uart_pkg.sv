@@ -133,10 +133,10 @@ package obi_uart_pkg;
     logic fifo_err;          // FIFO Data Error
     logic tx_empty;          // Transmitter Empty (no bits to send)
     logic thr_empty;         // THR (and FIFO) Empty
-    logic break_irq;      // Break Interrupt
+    logic break_ind;         // Break Indicator
     logic frame_err;         // Framing Error
     logic par_err;           // Parity Error
-    logic overrun;       // Overrun Error
+    logic overrun;           // Overrun Error
     logic data_ready;        // Data Ready
   } lsr_bits_t;
 
@@ -235,7 +235,7 @@ package obi_uart_pkg;
     logic       overrun;
     logic       par_err;
     logic       frame_err;
-    logic       break_irq;
+    logic       break_ind;
 
     logic       rhr_valid;
     logic       fifo_rst_valid;

@@ -109,7 +109,7 @@ module obi_uart_register import obi_uart_pkg::*; #(
     new_reg.LSR.fifo_err   = write_rx.fifo_err_valid ? write_rx.fifo_err   : reg_q.LSR.fifo_err;
     new_reg.LSR.tx_empty   = write_tx.empty_valid    ? write_tx.tx_empty   : reg_q.LSR.tx_empty;
     new_reg.LSR.thr_empty  = write_tx.thr_valid      ? write_tx.thr_empty  : reg_q.LSR.thr_empty;
-    new_reg.LSR.break_irq  = write_rx.break_valid    ? write_rx.break_irq  : reg_q.LSR.break_irq;
+    new_reg.LSR.break_ind  = write_rx.break_valid    ? write_rx.break_ind  : reg_q.LSR.break_ind;
     new_reg.LSR.frame_err  = write_rx.frame_valid    ? write_rx.frame_err  : reg_q.LSR.frame_err;
     new_reg.LSR.par_err    = write_rx.par_valid      ? write_rx.par_err    : reg_q.LSR.par_err;
     new_reg.LSR.data_ready = write_rx.dr_valid       ? write_rx.data_ready : reg_q.LSR.data_ready;
