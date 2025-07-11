@@ -47,7 +47,7 @@ module obi_uart_interrupts import obi_uart_pkg::*; #()
   always_comb begin
     //--Receive-Line-Status-Interrupt-------------------------------------------------------------
     intrpt_reg_d.rls = reg_read_i.ier.rlstat & (reg_write_i.rx.overrun | reg_write_i.rx.par_err |
-                        reg_write_i.rx.frame_err | reg_write_i.rx.break_irq);
+                        reg_write_i.rx.frame_err | reg_write_i.rx.break_ind);
 
     //--Receive-Data-Ready-Interrupt--------------------------------------------------------------
     if (reg_read_i.fcr.fifo_en) begin
