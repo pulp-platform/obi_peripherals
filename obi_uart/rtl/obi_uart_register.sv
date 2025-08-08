@@ -6,7 +6,7 @@
 // - Hannah Pochert  <hpochert@ethz.ch>
 // - Philippe Sauter <phsauter@iis.ee.ethz.ch>
 
-`include "common_cells/registers.svh"
+// `include "common_cells/registers.svh"
 
 module obi_uart_register import obi_uart_pkg::*; #(
   /// The OBI configuration connected to this peripheral.
@@ -60,12 +60,29 @@ module obi_uart_register import obi_uart_pkg::*; #(
   assign req_d        = obi_req_i.req;
 
   // FF for the obi rsp signals (id and valid)
-  `FF(id_q, id_d, '0, clk_i, rst_ni)               // 5 Bits
-  `FF(valid_q, valid_d, '0, clk_i, rst_ni)         // 1 Bit
-  `FF(word_addr_q, word_addr_d, '0, clk_i, rst_ni) // #AddressBits Bits
-  `FF(we_q, we_d, '0, clk_i, rst_ni)               // 1 Bit
-  `FF(w_err_q, w_err_d, '0, clk_i, rst_ni)         // 1 Bit
-  `FF(req_q, req_d, '0, clk_i, rst_ni)             // 1 Bit
+  // `FF(id_q, id_d, '0, clk_i, rst_ni)               // 5 Bits
+  // `FF(valid_q, valid_d, '0, clk_i, rst_ni)         // 1 Bit
+  // `FF(word_addr_q, word_addr_d, '0, clk_i, rst_ni) // #AddressBits Bits
+  // `FF(we_q, we_d, '0, clk_i, rst_ni)               // 1 Bit
+  // `FF(w_err_q, w_err_d, '0, clk_i, rst_ni)         // 1 Bit
+  // `FF(req_q, req_d, '0, clk_i, rst_ni)             // 1 Bit
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      id_q         <= '0;
+      valid_q      <= '0;
+      word_addr_q  <= '0;
+      we_q         <= '0;
+      w_err_q      <= '0;
+      req_q        <= '0;
+    end else begin
+      id_q         <= id_d;
+      valid_q      <= valid_d;
+      word_addr_q  <= word_addr_d;
+      we_q         <= we_d;
+      w_err_q      <= w_err_d;
+      req_q        <= req_d;
+    end
+  end
 
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -296,6 +313,13 @@ module obi_uart_register import obi_uart_pkg::*; #(
   // SEQUENTIAL LOGIC //
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  `FF(reg_q, reg_d, obi_uart_pkg::RegResetVal, clk_i, rst_ni)
+  // `FF(reg_q, reg_d, obi_uart_pkg::RegResetVal, clk_i, rst_ni)
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      reg_q <= obi_uart_pkg::RegResetVal;
+    end else begin
+      reg_q <= reg_d;
+    end
+  end
 
 endmodule

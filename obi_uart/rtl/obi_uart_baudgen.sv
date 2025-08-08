@@ -6,7 +6,7 @@
 // - Hannah Pochert  <hpochert@ethz.ch>
 // - Philippe Sauter <phsauter@iis.ee.ethz.ch>
 
-`include "common_cells/registers.svh"
+// `include "common_cells/registers.svh"
 
 /// Generates clock enable signals for the required baud multiples
 module obi_uart_baudgen import obi_uart_pkg::*; #()
@@ -62,8 +62,8 @@ module obi_uart_baudgen import obi_uart_pkg::*; #()
     .WIDTH           (16),
     .STICKY_OVERFLOW (0)
   ) i_oversample_counter (
-    .clk_i,
-    .rst_ni,
+    .clk_i   (clk_i),
+    .rst_ni (rst_ni),
     .clear_i   ( oversample_clear ), // Synchronous clear: Sets Counter 0 in the next cycle
     .en_i      ( divisor_valid    ), // Count only if configuration is high
     .load_i    ( 1'b0             ),
@@ -88,8 +88,8 @@ module obi_uart_baudgen import obi_uart_pkg::*; #()
     .WIDTH          (4),
     .STICKY_OVERFLOW(0)
   ) i_baudrate_counter (
-    .clk_i,
-    .rst_ni,
+    .clk_i  (clk_i),
+    .rst_ni (rst_ni),
     .clear_i   ( baud_clear            ), // Synchronous clear: Sets Counter 0 in the next cycle
     .en_i      ( oversample_is_divisor ), // Count every time oversample counter hits its target
     .load_i    ( 1'b0                  ),
@@ -109,6 +109,13 @@ module obi_uart_baudgen import obi_uart_pkg::*; #()
   assign clear_double_d     = count_is_double;
   assign double_rate_edge_o = count_is_double & ~clear_double_q;
 
-  `FF(clear_double_q, clear_double_d, '0, clk_i, rst_ni)
+  // `FF(clear_double_q, clear_double_d, '0, clk_i, rst_ni)
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      clear_double_q <= '0;
+    end else begin
+      clear_double_q <= clear_double_d;
+    end
+  end
 
 endmodule

@@ -6,7 +6,7 @@
 // - Hannah Pochert  <hpochert@ethz.ch>
 // - Philippe Sauter <phsauter@iis.ee.ethz.ch>
 
-`include "common_cells/registers.svh"
+// `include "common_cells/registers.svh"
 
 module obi_uart_tx #()
 (
@@ -65,8 +65,8 @@ module obi_uart_tx #()
     .DATA_WIDTH  (8),
     .DEPTH       (16)
   ) i_fifo_v3 (
-    .clk_i,
-    .rst_ni,
+    .clk_i     (clk_i),
+    .rst_ni    (rst_ni),
     .flush_i   (fifo_clear),  // flush the queue
     .testmode_i(1'b0      ),
     // status flags
@@ -298,13 +298,43 @@ module obi_uart_tx #()
   // Sequential //
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  `FF(thr_full_q, thr_full_d, '0, clk_i, rst_ni)
+  // `FF(thr_full_q, thr_full_d, '0, clk_i, rst_ni)
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      thr_full_q <= '0;
+    end else begin
+      thr_full_q <= thr_full_d;
+    end
+  end
 
-  `FF(tsr_q, tsr_d, '0, clk_i, rst_ni)
-  `FF(tsr_count_q, tsr_count_d, '0, clk_i, rst_ni)
+  // `FF(tsr_q, tsr_d, '0, clk_i, rst_ni)
+  // `FF(tsr_count_q, tsr_count_d, '0, clk_i, rst_ni)
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      tsr_q <= '0;
+      tsr_count_q <= '0;
+    end else begin
+      tsr_q <= tsr_d;
+      tsr_count_q <= tsr_count_d;
+    end
+  end
 
-  `FF(txd_q, txd_d, '1, clk_i, rst_ni)
+  // `FF(txd_q, txd_d, '1, clk_i, rst_ni)
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      txd_q <= '1;
+    end else begin
+      txd_q <= txd_d;
+    end
+  end
 
-  `FF(state_q, state_d, TXIDLE, clk_i, rst_ni)
+  // `FF(state_q, state_d, TXIDLE, clk_i, rst_ni)
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      state_q <= TXIDLE;
+    end else begin
+      state_q <= state_d;
+    end
+  end
 
 endmodule

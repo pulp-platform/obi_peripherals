@@ -6,7 +6,7 @@
 // - Hannah Pochert  <hpochert@ethz.ch>
 // - Philippe Sauter <phsauter@iis.ee.ethz.ch>
 
-`include "common_cells/registers.svh"
+// `include "common_cells/registers.svh"
 
 /// Calculated interrupts and stores them until reset by hardware or by reading the ISR register
 module obi_uart_interrupts import obi_uart_pkg::*; #()
@@ -130,6 +130,13 @@ module obi_uart_interrupts import obi_uart_pkg::*; #()
     assign irq_o  = ~reg_isr_o.status;
     assign irq_no = reg_isr_o.status;
 
-    `FF(intrpt_reg_q, intrpt_reg_d, '0, clk_i, rst_ni)
+    // `FF(intrpt_reg_q, intrpt_reg_d, '0, clk_i, rst_ni)
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      intrpt_reg_q <= '0;
+    end else begin
+      intrpt_reg_q <= intrpt_reg_d;
+    end
+  end
 
 endmodule

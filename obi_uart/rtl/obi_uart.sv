@@ -6,7 +6,7 @@
 // - Hannah Pochert  <hpochert@ethz.ch>
 // - Philippe Sauter <phsauter@iis.ee.ethz.ch>
 
-`include "common_cells/registers.svh"
+// `include "common_cells/registers.svh"
 
 module obi_uart #(
   /// The OBI configuration connected to this peripheral.
@@ -68,11 +68,11 @@ module obi_uart #(
     .obi_req_t (obi_req_t),
     .obi_rsp_t (obi_rsp_t)
   ) i_uart_register (
-    .clk_i,
-    .rst_ni,
+    .clk_i       (clk_i),
+    .rst_ni      (rst_ni),
 
-    .obi_req_i,
-    .obi_rsp_o,
+    .obi_req_i   (obi_req_i),
+    .obi_rsp_o   (obi_rsp_o),
 
     .reg_read_o  (reg_read),
     .reg_write_i (reg_write)
@@ -82,19 +82,18 @@ module obi_uart #(
   // MODEM CONTROL //
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  obi_uart_modem #(
-  ) i_uart_modem (
-    .clk_i,
-    .rst_ni,
+  obi_uart_modem i_uart_modem (
+    .clk_i       (clk_i),
+    .rst_ni      (rst_ni),
 
-    .cts_ni,
-    .dsr_ni,
-    .ri_ni,
-    .cd_ni,
-    .rts_no,
-    .dtr_no,
-    .out1_no,
-    .out2_no,
+    .cts_ni      (cts_ni),
+    .dsr_ni      (dsr_ni),
+    .ri_ni       (ri_ni),
+    .cd_ni       (cd_ni),
+    .rts_no      (rts_no),
+    .dtr_no      (dtr_no),
+    .out1_no     (out1_no),
+    .out2_no     (out2_no),
 
     .reg_read_i  (reg_read),
     .reg_write_o (reg_write.modem)
@@ -108,10 +107,9 @@ module obi_uart #(
   // BAUDRATE GENERATION //
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  obi_uart_baudgen #(
-  ) i_uart_baudgen (
-    .clk_i,
-    .rst_ni,
+  obi_uart_baudgen i_uart_baudgen (
+    .clk_i       (clk_i),
+    .rst_ni      (rst_ni),
 
     .oversample_rate_edge_o(oversample_rate_edge),
     .double_rate_edge_o    (double_rate_edge),
@@ -124,10 +122,9 @@ module obi_uart #(
   // RECEIVE //
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  obi_uart_rx # (
-  ) i_uart_rx (
-    .clk_i,
-    .rst_ni,
+  obi_uart_rx i_uart_rx (
+    .clk_i       (clk_i),
+    .rst_ni      (rst_ni),
 
     .oversample_rate_edge_i (oversample_rate_edge),
     .baud_rate_edge_i       (baud_rate_edge),
@@ -145,10 +142,9 @@ module obi_uart #(
   // TRANSMIT //
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  obi_uart_tx # (
-  ) i_uart_tx (
-    .clk_i,
-    .rst_ni,
+  obi_uart_tx i_uart_tx (
+    .clk_i       (clk_i),
+    .rst_ni      (rst_ni),
 
     .baud_rate_edge_i   (baud_rate_edge),
     .double_rate_edge_i (double_rate_edge),
@@ -163,16 +159,15 @@ module obi_uart #(
   // INTERRUPT CONTROL //
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  obi_uart_interrupts #(
-  ) i_uart_interrupts (
-    .clk_i,
-    .rst_ni,
+  obi_uart_interrupts i_uart_interrupts (
+    .clk_i       (clk_i),
+    .rst_ni      (rst_ni),
 
-    .rx_fifo_trigger,
-    .rx_timeout,
+    .rx_fifo_trigger (rx_fifo_trigger),
+    .rx_timeout      (rx_timeout),
 
-    .irq_o,
-    .irq_no,
+    .irq_o           (irq_o),
+    .irq_no          (irq_no),
 
     .reg_read_i  (reg_read),
     .reg_write_i (reg_write),
