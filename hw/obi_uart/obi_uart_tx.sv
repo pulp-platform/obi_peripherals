@@ -21,6 +21,11 @@ module obi_uart_tx #()
   input obi_uart_pkg::reg_read_t      reg_read_i,
   output obi_uart_pkg::tx_reg_write_t reg_write_o
 );
+// tmrg default triplicate
+// tmrg do_not_triplicate clk_i
+// tmrg do_not_triplicate rst_ni
+// tmrg do_not_triplicate i_fifo_v3
+// tmrg tmr_error true
 
   // Import the UART package for definitions and parameters
   import obi_uart_pkg::*;

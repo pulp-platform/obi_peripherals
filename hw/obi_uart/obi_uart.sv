@@ -40,6 +40,18 @@ module obi_uart #(
   output logic     out1_no, // Modem Oup DaTa Ready, optional outputs
   output logic     out2_no  // Modem Oup DaTa Ready, optional outputs
 );
+// tmrg default triplicate
+// tmrg do_not_triplicate clk_i
+// tmrg do_not_triplicate rst_ni
+// tmrg do_not_triplicate i_uart_register
+// tmrg do_not_triplicate i_uart_modem
+// tmrg do_not_triplicate i_uart_baudgen
+// tmrg do_not_triplicate i_uart_rx
+// tmrg do_not_triplicate i_uart_tx
+// tmrg do_not_triplicate i_uart_interrupts
+// tmrg tmr_error true
+
+
   // Import the UART package for definitions and parameters
   import obi_uart_pkg::*;
 

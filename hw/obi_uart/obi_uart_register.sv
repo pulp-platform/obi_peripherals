@@ -27,6 +27,11 @@ module obi_uart_register import obi_uart_pkg::*; #(
   output reg_read_t reg_read_o,   // Current register values
   input  reg_write_t reg_write_i  // Internal updates to register values
 );
+// tmrg default triplicate
+// tmrg do_not_triplicate clk_i
+// tmrg do_not_triplicate rst_ni
+// tmrg tmr_error true
+
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // Obi Preparations //
