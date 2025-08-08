@@ -26,7 +26,14 @@
  *                                                                                                  *
  ****************************************************************************************************/
 
-module obi_uartTMR (
+module obi_uartTMR #(
+  /// The OBI configuration connected to this peripheral.
+  parameter obi_pkg::obi_cfg_t ObiCfg = obi_pkg::ObiDefaultConfig, // SbrObiCfg
+  /// OBI request type
+  parameter type obi_req_t = logic,
+  /// OBI response type
+  parameter type obi_rsp_t = logic
+) (
   input logic clk_i,
   input logic rst_ni,
   input obi_req_t obi_req_iA,
