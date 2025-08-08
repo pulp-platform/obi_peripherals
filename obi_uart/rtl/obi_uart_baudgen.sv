@@ -39,13 +39,15 @@ module obi_uart_baudgen import obi_uart_pkg::*; #()
   logic [15:0] oversample_count;
 
   //-- Double Baud Signals -----------------------------------------------------------------------
-  logic       clear_double_d, clear_double_q;
+  logic       clear_double_d, clear_double_q, clear_double_qVoted;
   logic       count_is_double;
 
   //-- Baud Signals ------------------------------------------------------------------------------
   logic       baud_clear;
   logic [3:0] baud_count;
   logic       baud_count_overflow;
+
+  assign clear_double_qVoted = clear_double_q;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // Clock Division //
@@ -113,7 +115,7 @@ module obi_uart_baudgen import obi_uart_pkg::*; #()
   assign count_is_double    = (baud_count[2:0] == '0); // last three bits zero
   // clear_double turns the pulse off after one clock cycle
   assign clear_double_d     = count_is_double;
-  assign double_rate_edge_o = count_is_double & ~clear_double_q;
+  assign double_rate_edge_o = count_is_double & ~clear_double_qVoted;
 
   // `FF(clear_double_q, clear_double_d, '0, clk_i, rst_ni)
   always_ff @(posedge clk_i or negedge rst_ni) begin

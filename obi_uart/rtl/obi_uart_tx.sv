@@ -45,10 +45,14 @@ module obi_uart_tx #()
   logic [3:0] fifo_usage;
 
   //--THR-Full------------------------------------------------------------------------------------
-  logic thr_full_q, thr_full_d;
+  logic thr_full_q, thr_full_d, thr_full_qVoted;
+
+  assign thr_full_qVoted = thr_full_q;
 
   //--Statemachine-Transition-Signals-------------------------------------------------------------
-  state_type_tx_e state_q, state_d;
+  state_type_tx_e state_q, state_d, state_qVoted;
+
+  assign state_qVoted = state_q;
 
   logic [2:0] word_len_bits;
   logic [7:0] word_len_mask;
@@ -56,10 +60,15 @@ module obi_uart_tx #()
   //--Statemachine-TSR-Signals--------------------------------------------------------------------
   logic tsr_empty;
   logic tsr_finish;
-  logic [7:0] tsr_q, tsr_d;
-  logic [2:0] tsr_count_q, tsr_count_d;
+  logic [7:0] tsr_q, tsr_d, tsr_qVoted;
+  logic [2:0] tsr_count_q, tsr_count_d, tsr_count_qVoted;
 
-  logic txd_q, txd_d;
+  assign tsr_qVoted = tsr_q;
+  assign tsr_count_qVoted = tsr_count_q;
+
+  logic txd_q, txd_d, txd_qVoted;
+
+  assign txd_qVoted = txd_q;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // FIFO Instantiation //
@@ -93,7 +102,7 @@ module obi_uart_tx #()
     //--------------------------------------------------------------------------------------------
     // Defaults
     //--------------------------------------------------------------------------------------------
-    thr_full_d    = thr_full_q;
+    thr_full_d    = thr_full_qVoted;
     word_len_mask = '0;
 
     //--FIFO Combinational------------------------------------------------------------------------
@@ -105,15 +114,15 @@ module obi_uart_tx #()
     reg_write_o = '0;
 
     //--Statemachine Combinational----------------------------------------------------------------
-    state_d       = state_q;     // Pass along state
+    state_d       = state_qVoted;     // Pass along state
 
-    txd_o         = txd_q & ~reg_read_i.lcr.set_break; // UART Output Assignment
-    txd_d         = txd_q;       // UART Output store for one bit time
+    txd_o         = txd_qVoted & ~reg_read_i.lcr.set_break; // UART Output Assignment
+    txd_d         = txd_qVoted;       // UART Output store for one bit time
 
     fifo_pop      = 1'b0;        // Read and Remove Byte From FIFO
 
-    tsr_d         = tsr_q;       //TSR
-    tsr_count_d   = tsr_count_q; //TSR
+    tsr_d         = tsr_qVoted;       //TSR
+    tsr_count_d   = tsr_count_qVoted; //TSR
     tsr_finish    = 1'b0;        //TSR
     tsr_empty     = 1'b0;        //TSR
 
@@ -156,18 +165,18 @@ module obi_uart_tx #()
     //--------------------------------------------------------------------------------------------
     // TSR - Transmitter Shift Register (parallel to serial)
     //--------------------------------------------------------------------------------------------
-    if (state_q == TXDATA & (tsr_count_q <= word_len_bits)) begin
-      txd_d       = tsr_q[tsr_count_q];
+    if (state_qVoted == TXDATA & (tsr_count_qVoted <= word_len_bits)) begin
+      txd_d       = tsr_qVoted[tsr_count_qVoted];
       if (baud_rate_edge_i) begin
-        tsr_count_d = tsr_count_q + 1;
-        tsr_finish  = (tsr_count_q == word_len_bits)? 1'b1 : 1'b0;
+        tsr_count_d = tsr_count_qVoted + 1;
+        tsr_finish  = (tsr_count_qVoted == word_len_bits)? 1'b1 : 1'b0;
       end
     end
 
     //--------------------------------------------------------------------------------------------
     // State Transition
     //--------------------------------------------------------------------------------------------
-    case(state_q)
+    case(state_qVoted)
       TXIDLE: begin
         txd_d       = 1'b1; // Inactive High
         tsr_d       = '0;
@@ -181,7 +190,7 @@ module obi_uart_tx #()
             state_d  = TXSTART;
           end
         end else begin
-          if (thr_full_q & baud_rate_edge_i) begin // Read THR into TSR
+          if (thr_full_qVoted & baud_rate_edge_i) begin // Read THR into TSR
             tsr_d      = reg_read_i.thr.char_tx & word_len_mask;
             thr_full_d = 1'b0;
             state_d    = TXSTART;
@@ -208,8 +217,8 @@ module obi_uart_tx #()
 
       TXPAR: begin
         case (reg_read_i.lcr[5:4])// Read Parity Configuration
-          2'b00: txd_d = ~(^tsr_q); // Odd Parity
-          2'b01: txd_d = ^tsr_q;    // Even Parity
+          2'b00: txd_d = ~(^tsr_qVoted); // Odd Parity
+          2'b01: txd_d = ^tsr_qVoted;    // Even Parity
           2'b10: txd_d = 1'b1;      // Forced 1
           2'b11: txd_d = 1'b0;      // Forced 0
           default: txd_d = 1'b0;
@@ -272,7 +281,7 @@ module obi_uart_tx #()
       end
 
       //--Write-FIFO-from-THR---------------------------------------------------------------------
-      if (thr_full_q & (~fifo_full)) begin
+      if (thr_full_qVoted & (~fifo_full)) begin
         fifo_push   = 1'b1;
         fifo_data_i = reg_read_i.thr.char_tx & word_len_mask;
         thr_full_d  = 1'b0;
@@ -287,7 +296,7 @@ module obi_uart_tx #()
       //--Keep-FIFO-cleared-----------------------------------------------------------------------
       fifo_clear = 1'b1;
       //--Set-LSR---------------------------------------------------------------------------------
-      if (~thr_full_q) begin
+      if (~thr_full_qVoted) begin
         reg_write_o.thr_empty = 1'b1;
         reg_write_o.thr_valid = 1'b1;
         if (tsr_empty) begin

@@ -39,22 +39,29 @@ module obi_uart_register import obi_uart_pkg::*; #(
 
   // Signals for the OBI response
   logic [ObiCfg.DataWidth-1:0] rsp_data;
-  logic                        valid_d, valid_q;         // delayed for the response phase
+  logic                        valid_d, valid_q, valid_qVoted;         // delayed for the response phase
   logic                        err;
-  logic                        w_err_d, w_err_q;
-  logic [AddressBits-1:0]      word_addr_d, word_addr_q; // delayed for the response phase
-  logic [ObiCfg.IdWidth-1:0]   id_d, id_q;               // delayed for the response phase
-  logic                        we_d, we_q;
-  logic                        req_d, req_q;
+  logic                        w_err_d, w_err_q, w_err_qVoted;
+  logic [AddressBits-1:0]      word_addr_d, word_addr_q, word_addr_qVoted; // delayed for the response phase
+  logic [ObiCfg.IdWidth-1:0]   id_d, id_q, id_qVoted;               // delayed for the response phase
+  logic                        we_d, we_q, we_qVoted;
+  logic                        req_d, req_q, req_qVoted;
+
+  assign valid_qVoted      = valid_q;
+  assign w_err_qVoted      = w_err_q;
+  assign word_addr_qVoted  = word_addr_q;
+  assign id_qVoted         = id_q;
+  assign we_qVoted         = we_q;
+  assign req_qVoted        = req_q;
 
   // OBI rsp Assignment
   always_comb begin
     obi_rsp_o         = '0;
     obi_rsp_o.r.rdata = rsp_data;
-    obi_rsp_o.r.rid   = id_q;
+    obi_rsp_o.r.rid   = id_qVoted;
     obi_rsp_o.r.err   = err;
     obi_rsp_o.gnt     = obi_req_i.req;
-    obi_rsp_o.rvalid  = valid_q;
+    obi_rsp_o.rvalid  = valid_qVoted;
   end
 
   // id, valid and address handling
@@ -152,7 +159,7 @@ module obi_uart_register import obi_uart_pkg::*; #(
   //-- Software updates to registers -------------------------------------------------------------
   always_comb begin
     // default
-    err     = w_err_q;
+    err     = w_err_qVoted;
     w_err_d = 1'b0;
 
     // read/write indicators
@@ -244,13 +251,13 @@ module obi_uart_register import obi_uart_pkg::*; #(
     end
 
     //-- OBI-Read --------------------------------------------------------------------------------
-    if (req_q & ~we_q) begin
+    if (req_qVoted & ~we_qVoted) begin
 
       err = 1'b0;
 
       if (~reg_q.LCR[7]) begin // DLAB = 0 Address Decode
 
-        case (word_addr_q)
+        case (word_addr_qVoted)
           RegAddrRHR: begin
             rsp_data[RegWidth-1:0] = reg_q.RHR;
             reg_read_o.obi_read_rhr  = 1'b1;
@@ -294,7 +301,7 @@ module obi_uart_register import obi_uart_pkg::*; #(
 
       end else begin // DLAB = 1 Address Decode
 
-        case (word_addr_q)
+        case (word_addr_qVoted)
           RegAddrDLL: begin
             rsp_data[RegWidth-1:0] = reg_q.DLL;
           end
