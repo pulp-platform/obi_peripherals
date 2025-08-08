@@ -24,6 +24,11 @@ module obi_uart_interrupts import obi_uart_pkg::*; #()
   input  reg_write_t  reg_write_i,
   output isr_bits_t   reg_isr_o
 );
+  // tmrg default triplicate
+  // tmrg do_not_triplicate clk_i
+  // tmrg do_not_triplicate rst_ni
+  // tmrg tmr_error true
+
 
 
   ////////////////////////////////////////////////////////////////////////////////////////////////

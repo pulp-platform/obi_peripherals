@@ -24,6 +24,14 @@ module obi_uart_rx import obi_uart_pkg::*; #()
   input  reg_read_t     reg_read_i,
   output rx_reg_write_t reg_write_o
 );
+// tmrg default triplicate
+// tmrg do_not_triplicate clk_i
+// tmrg do_not_triplicate rst_ni
+// tmrg do_not_triplicate i_counter
+// tmrg do_not_triplicate i_sync
+// tmrg do_not_triplicate i_fifo_v3
+// tmrg tmr_error true
+
 
   //--Timing--------------------------------------------------------------------------------------
   logic timing_bit_center_q, timing_bit_center_d;

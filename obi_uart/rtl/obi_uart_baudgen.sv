@@ -20,6 +20,12 @@ module obi_uart_baudgen import obi_uart_pkg::*; #()
 
   input reg_read_t reg_read_i
 );
+// tmrg default triplicate
+// tmrg do_not_triplicate clk_i
+// tmrg do_not_triplicate rst_ni
+// tmrg do_not_triplicate i_oversample_counter
+// tmrg do_not_triplicate i_baudrate_counter
+// tmrg tmr_error true
 
   // Import the UART package for definitions and parameters
 
