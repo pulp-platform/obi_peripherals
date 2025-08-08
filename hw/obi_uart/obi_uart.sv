@@ -49,6 +49,16 @@ module obi_uart #(
 // tmrg do_not_triplicate i_uart_rx
 // tmrg do_not_triplicate i_uart_tx
 // tmrg do_not_triplicate i_uart_interrupts
+// tmrg do_not_triplicate rxd_i
+// tmrg do_not_triplicate txd_o
+// tmrg do_not_triplicate cts_ni
+// tmrg do_not_triplicate dsr_ni
+// tmrg do_not_triplicate ri_ni
+// tmrg do_not_triplicate cd_ni
+// tmrg do_not_triplicate rts_no
+// tmrg do_not_triplicate dtr_no
+// tmrg do_not_triplicate out1_no
+// tmrg do_not_triplicate out2_no
 // tmrg tmr_error true
 
 
