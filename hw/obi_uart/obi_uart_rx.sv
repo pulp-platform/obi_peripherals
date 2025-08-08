@@ -34,7 +34,7 @@ module obi_uart_rx import obi_uart_pkg::*; #()
 
 
   //--Timing--------------------------------------------------------------------------------------
-  logic timing_bit_center_q, timing_bit_center_d;
+  logic timing_bit_center_q, timing_bit_center_d, timing_bit_center_qVoted;
   logic timing_bit_center_edge;
   logic timing_clear;
   logic timing_init_clear;
@@ -42,12 +42,17 @@ module obi_uart_rx import obi_uart_pkg::*; #()
   logic [4:0] timing_offset;
   logic [4:0] timing_count;
 
+  assign timing_bit_center_qVoted = timing_bit_center_q;
+
   //--Synchronization-Signals---------------------------------------------------------------------
   logic sync_rxd;
 
   //--Majority-Filter-Signals---------------------------------------------------------------------
-  logic [1:0] high_count_q, high_count_d;
-  logic filtered_rxd_q, filtered_rxd_d;
+  logic [1:0] high_count_q, high_count_d, high_count_qVoted;
+  logic filtered_rxd_q, filtered_rxd_d, filtered_rxd_qVoted;
+
+  assign filtered_rxd_qVoted = filtered_rxd_q;
+  assign high_count_qVoted = high_count_q;
 
   //--FIFO-signals--------------------------------------------------------------------------------
   logic fifo_clear;
@@ -60,7 +65,7 @@ module obi_uart_rx import obi_uart_pkg::*; #()
   logic fifo_pop;
   // FIFO Write
   logic break_interrupt;
-  logic [3:0] fifo_error_index_q, fifo_error_index_d;
+  logic [3:0] fifo_error_index_q, fifo_error_index_d, fifo_error_index_qVoted;
   // FIFO trigger
   logic [3:0] tl_characters;
   // FIFO timeout
@@ -68,30 +73,44 @@ module obi_uart_rx import obi_uart_pkg::*; #()
   // timeout occurs after 4 characters -> 48bit -> $clog2(48) = 6
   logic [3:0] character_length;
   logic [5:0] timeout_level;
-  logic [5:0] timeout_count_q, timeout_count_d;
+  logic [5:0] timeout_count_q, timeout_count_d, timeout_count_qVoted;
+
+  assign fifo_error_index_qVoted = fifo_error_index_q;
+  assign timeout_count_qVoted = timeout_count_q;
 
   //--Write-Read-FIFO-or-Write-RHR----------------------------------------------------------------
-  logic rhr_full_q, rhr_full_d;
+  logic rhr_full_q, rhr_full_d, rhr_full_qVoted;
+
+  assign rhr_full_qVoted = rhr_full_q;
 
   //--Statemachine-Transition-Signals-------------------------------------------------------------
-  state_type_rx_e state_q, state_d;
+  state_type_rx_e state_q, state_d, state_qVoted;
   logic rsr_finish;
   logic par_finish;
   logic stop_finish;
   logic write_init;
 
+  assign state_qVoted = state_q;
+
   //--Statemachine-RSR-Signals--------------------------------------------------------------------
-  logic [7:0] rsr_q, rsr_d;
-  logic [2:0] bitcount_q, bitcount_d; // Count up to character_len
+  logic [7:0] rsr_q, rsr_d, rsr_qVoted;
+  logic [2:0] bitcount_q, bitcount_d, bitcount_qVoted; // Count up to character_len
   logic [2:0] word_len_bits;          // 5-8 Bits
+
+  assign rsr_qVoted = rsr_q;
+  assign bitcount_qVoted = bitcount_q;
 
   //--Statemachine-Error-Signals------------------------------------------------------------------
   // Parity Check
-  logic parity_err_q, parity_err_d;
+  logic parity_err_q, parity_err_d, parity_err_qVoted;
   logic data_parity;
   // Stop Bit Check
-  logic framing_err_q, framing_err_d;
-  logic break_q, break_d;
+  logic framing_err_q, framing_err_d, framing_err_qVoted;
+  logic break_q, break_d, break_qVoted;
+
+  assign parity_err_qVoted = parity_err_q;
+  assign framing_err_qVoted = framing_err_q;
+  assign break_qVoted = break_q;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // Timing //
@@ -126,7 +145,7 @@ module obi_uart_rx import obi_uart_pkg::*; #()
   // Is high for one oversample_rate cycle
   assign timing_bit_center_d    = (timing_count == 5'b01000) ? 1'b1 : 1'b0;
   // Edge is high for one clk_i cycle
-  assign timing_bit_center_edge = (timing_bit_center_d & ~timing_bit_center_q) ? 1'b1 : 1'b0;
+  assign timing_bit_center_edge = (timing_bit_center_d & ~timing_bit_center_qVoted) ? 1'b1 : 1'b0;
 
   // `FF(timing_bit_center_q, timing_bit_center_d, '0, clk_i, rst_ni)
   always_ff @(posedge clk_i or negedge rst_ni) begin
@@ -160,11 +179,11 @@ module obi_uart_rx import obi_uart_pkg::*; #()
 
   always_comb begin
 
-    high_count_d = high_count_q;
-    filtered_rxd_d = filtered_rxd_q;
+    high_count_d = high_count_qVoted;
+    filtered_rxd_d = filtered_rxd_qVoted;
 
     // no timing lock yet, use as last sync_rxd value
-    if( (state_q == RXIDLE) || (state_q == RXRESYNCHRONIZE) ) begin
+    if( (state_qVoted == RXIDLE) || (state_qVoted == RXRESYNCHRONIZE) ) begin
       filtered_rxd_d = sync_rxd;
     end
 
@@ -172,9 +191,9 @@ module obi_uart_rx import obi_uart_pkg::*; #()
       high_count_d = 2'b00;
     end else if (oversample_rate_edge_i) begin
       if (sync_rxd & (timing_count < 5'b00111)) begin // Take samples in Cycle 6, 7, 8
-        high_count_d = high_count_q + 1;
+        high_count_d = high_count_qVoted + 1;
       end else if (timing_count == 5'b00111) begin // filtered_rxd is set for Oversample Cycle 8
-        if ((high_count_q == 2'b10) | (high_count_q == 2'b11) ) begin
+        if ((high_count_qVoted == 2'b10) | (high_count_qVoted == 2'b11) ) begin
           filtered_rxd_d = 1'b1;
         end else begin
           filtered_rxd_d = 1'b0;
@@ -229,7 +248,7 @@ module obi_uart_rx import obi_uart_pkg::*; #()
     // Defaults
     //--------------------------------------------------------------------------------------------
     // Character is all zeros, parity and stop indicate break, current line is still 0 -> break
-    break_interrupt = (rsr_q == '0) & (break_q | break_d) & (~filtered_rxd_q);
+    break_interrupt = (rsr_qVoted == '0) & (break_qVoted | break_d) & (~filtered_rxd_qVoted);
 
     //--FIFO Combinational------------------------------------------------------------------------
     fifo_clear    = 1'b1; // Reset
@@ -240,24 +259,24 @@ module obi_uart_rx import obi_uart_pkg::*; #()
     fifo_push     = 1'b0; // Write
     fifo_data_i   = '0;   // Write
 
-    timeout_count_d = timeout_count_q;
+    timeout_count_d = timeout_count_qVoted;
     timeout_o         = 1'b0; // timeout_o
     // timeout_level = (character_length * 4) +1
     character_length = (6'd02 +word_len_bits +reg_read_i.lcr.par_en +reg_read_i.lcr.stop_bits);
     timeout_level = (character_length << 2) + 6'd01;
 
-    fifo_error_index_d = fifo_error_index_q; // FIFO Error
+    fifo_error_index_d = fifo_error_index_qVoted; // FIFO Error
 
     //--Register Interface------------------------------------------------------------------------
     reg_write_o = '0;
 
     //--Statemachine Combinational----------------------------------------------------------------
-    state_d       = state_q; // Pass along state
-    rsr_d         = rsr_q;
-    bitcount_d    = bitcount_q;
-    parity_err_d  = parity_err_q;
-    framing_err_d = framing_err_q;
-    break_d       = break_q; // Break Interrupt information for Parity and Stop Bits
+    state_d       = state_qVoted; // Pass along state
+    rsr_d         = rsr_qVoted;
+    bitcount_d    = bitcount_qVoted;
+    parity_err_d  = parity_err_qVoted;
+    framing_err_d = framing_err_qVoted;
+    break_d       = break_qVoted; // Break Interrupt information for Parity and Stop Bits
 
     rsr_finish  = 1'b0;
     par_finish  = 1'b0;
@@ -273,7 +292,7 @@ module obi_uart_rx import obi_uart_pkg::*; #()
     //--RHR-Combinational-------------------------------------------------------------------------
     fifo_clear = 1'b1;
     fifo_pop   = 1'b0;
-    rhr_full_d = rhr_full_q;
+    rhr_full_d = rhr_full_qVoted;
 
     //--------------------------------------------------------------------------------------------
     // Word Length
@@ -310,7 +329,7 @@ module obi_uart_rx import obi_uart_pkg::*; #()
       reg_write_o.par_valid     = 1'b0;
       reg_write_o.frame_valid   = 1'b0;
       reg_write_o.break_valid   = 1'b0;
-      if (fifo_error_index_q == 4'b0000) begin
+      if (fifo_error_index_qVoted == 4'b0000) begin
         reg_write_o.fifo_err       = 1'b0;
         reg_write_o.fifo_err_valid = 1'b1;
       end
@@ -324,11 +343,11 @@ module obi_uart_rx import obi_uart_pkg::*; #()
     // RSR - Receiver Shift Register (serial to parallel)
     //--------------------------------------------------------------------------------------------
     // After rsr_finish, rsr_q is stored until the next time we are in START state
-    if (state_q == RXDATA) begin
-      if (timing_bit_center_edge & (bitcount_q <= word_len_bits)) begin
-        rsr_d[bitcount_q] = filtered_rxd_q;
-        bitcount_d        = bitcount_q + 1;
-        if (bitcount_q == word_len_bits) begin
+    if (state_qVoted == RXDATA) begin
+      if (timing_bit_center_edge & (bitcount_qVoted <= word_len_bits)) begin
+        rsr_d[bitcount_qVoted] = filtered_rxd_qVoted;
+        bitcount_d        = bitcount_qVoted + 1;
+        if (bitcount_qVoted == word_len_bits) begin
           rsr_finish = 1'b1;
         end
       end
@@ -337,19 +356,19 @@ module obi_uart_rx import obi_uart_pkg::*; #()
     //--------------------------------------------------------------------------------------------
     // Parity Check
     //--------------------------------------------------------------------------------------------
-    if (state_q == RXPAR) begin
+    if (state_qVoted == RXPAR) begin
       parity_err_d = 1'b0;
-      data_parity  = ^rsr_q; // XOR to compute parity of data bits
+      data_parity  = ^rsr_qVoted; // XOR to compute parity of data bits
 
       if (timing_bit_center_edge) begin
         case (reg_read_i.lcr[5:4]) // Read Parity Configuration
-          2'b00: parity_err_d = (data_parity == filtered_rxd_q); // Odd Parity
-          2'b01: parity_err_d = (data_parity != filtered_rxd_q); // Even Parity
-          2'b10: parity_err_d = (~filtered_rxd_q);               // Forced 1
-          2'b11: parity_err_d = filtered_rxd_q;                  // Forced 0
+          2'b00: parity_err_d = (data_parity == filtered_rxd_qVoted); // Odd Parity
+          2'b01: parity_err_d = (data_parity != filtered_rxd_qVoted); // Even Parity
+          2'b10: parity_err_d = (~filtered_rxd_qVoted);               // Forced 1
+          2'b11: parity_err_d = filtered_rxd_qVoted;                  // Forced 0
           default: parity_err_d = 1'b0;
         endcase
-        break_d    = ~filtered_rxd_q;
+        break_d    = ~filtered_rxd_qVoted;
         par_finish = 1'b1;
       end
     end
@@ -357,13 +376,13 @@ module obi_uart_rx import obi_uart_pkg::*; #()
     //--------------------------------------------------------------------------------------------
     // Stop Bit Check
     //--------------------------------------------------------------------------------------------
-    if (state_q == RXSTOP) begin
+    if (state_qVoted == RXSTOP) begin
       framing_err_d = 1'b0;
       if (timing_bit_center_edge) begin
-        break_d     = ~filtered_rxd_q & (break_q | ~reg_read_i.lcr.par_en);
+        break_d     = ~filtered_rxd_qVoted & (break_qVoted | ~reg_read_i.lcr.par_en);
         write_init  = 1'b1;
         stop_finish = 1'b1;
-        if (!filtered_rxd_q) begin
+        if (!filtered_rxd_qVoted) begin
           framing_err_d = 1'b1;
         end else begin
           framing_err_d = 1'b0;
@@ -374,9 +393,9 @@ module obi_uart_rx import obi_uart_pkg::*; #()
     //--------------------------------------------------------------------------------------------
     // State Transformation
     //--------------------------------------------------------------------------------------------
-    case(state_q)
+    case(state_qVoted)
       RXIDLE: begin
-        if (filtered_rxd_q & ~sync_rxd) begin // falling edge
+        if (filtered_rxd_qVoted & ~sync_rxd) begin // falling edge
           state_d = RXSTART;
           timing_init_clear = 1'b0;
           if (oversample_rate_edge_i) begin
@@ -389,7 +408,7 @@ module obi_uart_rx import obi_uart_pkg::*; #()
 
       RXSTART: begin
         if (timing_bit_center_edge) begin
-          if (~filtered_rxd_q) begin
+          if (~filtered_rxd_qVoted) begin
             bitcount_d = 3'b000;
             rsr_d      = '0;
             state_d = RXDATA;
@@ -417,7 +436,7 @@ module obi_uart_rx import obi_uart_pkg::*; #()
 
       RXSTOP: begin
         if (stop_finish) begin
-          if (framing_err_q) begin
+          if (framing_err_qVoted) begin
             state_d = RXRESYNCHRONIZE;
           end else begin
             state_d = RXIDLE;
@@ -426,7 +445,7 @@ module obi_uart_rx import obi_uart_pkg::*; #()
       end
 
       RXRESYNCHRONIZE: begin
-        if (filtered_rxd_q & ~sync_rxd) begin // falling edge
+        if (filtered_rxd_qVoted & ~sync_rxd) begin // falling edge
           state_d = RXSTART;
         end else begin
           state_d = RXIDLE;
@@ -447,10 +466,10 @@ module obi_uart_rx import obi_uart_pkg::*; #()
 
       // data ready when a character is moved from rsr or fifo to rhr or rhr already has data
       reg_write_o.dr_valid   = 1'b1;
-      reg_write_o.data_ready = write_init | ~fifo_empty | rhr_full_q;
+      reg_write_o.data_ready = write_init | ~fifo_empty | rhr_full_qVoted;
 
       //--Write-FIFO-to-RHR-----------------------------------------------------------------------
-      if ((~rhr_full_q) & (~fifo_empty)) begin
+      if ((~rhr_full_qVoted) & (~fifo_empty)) begin
         reg_write_o.rhr         = fifo_data_o[7:0];
         reg_write_o.rhr_valid   = 1'b1;
         reg_write_o.data_ready  = 1'b1;
@@ -465,8 +484,8 @@ module obi_uart_rx import obi_uart_pkg::*; #()
         reg_write_o.par_valid   = 1'b1;
         fifo_pop                = 1'b1;
 
-        if (4'b0000 != fifo_error_index_q) begin
-          fifo_error_index_d = fifo_error_index_q - 'b0001;
+        if (4'b0000 != fifo_error_index_qVoted) begin
+          fifo_error_index_d = fifo_error_index_qVoted - 'b0001;
         end
       end
 
@@ -474,18 +493,18 @@ module obi_uart_rx import obi_uart_pkg::*; #()
 
       //--Write-RSR-to-RHR------------------------------------------------------------------------
       if (write_init) begin
-        if (rhr_full_q) begin
+        if (rhr_full_qVoted) begin
           reg_write_o.overrun   = 1'b1;
           reg_write_o.overrun_valid = 1'b1;
         end
-        reg_write_o.rhr          = rsr_q; // If full, RHR just gets overwritten
+        reg_write_o.rhr          = rsr_qVoted; // If full, RHR just gets overwritten
         reg_write_o.rhr_valid    = 1'b1;
         rhr_full_d               = 1'b1;
 
         reg_write_o.data_ready   = 1'b1; // Set Data Ready Bit
         reg_write_o.dr_valid     = 1'b1;
-        reg_write_o.par_err      = parity_err_q;
-        reg_write_o.frame_err    = framing_err_q;
+        reg_write_o.par_err      = parity_err_qVoted;
+        reg_write_o.frame_err    = framing_err_qVoted;
         reg_write_o.break_ind    = break_interrupt;
         reg_write_o.break_ind    = 1'b1;
         reg_write_o.break_valid  = 1'b1;
@@ -533,9 +552,9 @@ module obi_uart_rx import obi_uart_pkg::*; #()
           reg_write_o.overrun_valid = 1'b1;
         end else begin
           fifo_push       = 1'b1;
-          fifo_data_i     = {parity_err_q, framing_err_q, break_interrupt, rsr_q}; // 11 Bits
+          fifo_data_i     = {parity_err_qVoted, framing_err_qVoted, break_interrupt, rsr_qVoted}; // 11 Bits
 
-          if (parity_err_q | framing_err_q | break_interrupt) begin
+          if (parity_err_qVoted | framing_err_qVoted | break_interrupt) begin
             fifo_error_index_d         = fifo_usage;
             reg_write_o.fifo_err       = 1'b1;
             reg_write_o.fifo_err_valid = 1'b1;
@@ -547,13 +566,13 @@ module obi_uart_rx import obi_uart_pkg::*; #()
       //------------------------------------------------------------------------------------------
       if (reg_read_i.obi_read_rhr | write_init) begin
         timeout_count_d = '0;
-      end else if (~fifo_empty | rhr_full_q) begin
+      end else if (~fifo_empty | rhr_full_qVoted) begin
         if (baud_rate_edge_i) begin
-          timeout_count_d = timeout_count_q + 1;
+          timeout_count_d = timeout_count_qVoted + 1;
         end
-        if (timeout_count_q == timeout_level) begin
+        if (timeout_count_qVoted == timeout_level) begin
           timeout_o = 1'b1;
-          timeout_count_d = timeout_count_q;
+          timeout_count_d = timeout_count_qVoted;
         end
       end
 

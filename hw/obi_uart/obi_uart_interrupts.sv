@@ -43,7 +43,8 @@ module obi_uart_interrupts import obi_uart_pkg::*; #()
     logic       mstat;     // Modem Status Interrupt - Changes in Modem Line
   } reg_intrpt_t;
 
-  reg_intrpt_t intrpt_reg_d, intrpt_reg_q;
+  reg_intrpt_t intrpt_reg_d, intrpt_reg_q, intrpt_reg_qVoted;
+  assign intrpt_reg_qVoted = intrpt_reg_q;
 
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -105,23 +106,23 @@ module obi_uart_interrupts import obi_uart_pkg::*; #()
     reg_isr_o.unused4  = 1'b0;
     reg_isr_o.unused5  = 1'b0;
 
-    reg_isr_o.status   = ~( |intrpt_reg_q );  // 0: interrupt present; 1: no interrupt
+    reg_isr_o.status   = ~( |intrpt_reg_qVoted );  // 0: interrupt present; 1: no interrupt
 
     //--Priority-Encoder--------------------------------------------------------------------------
     // 1. Priority Level
-    if (intrpt_reg_q.rls) begin
+    if (intrpt_reg_qVoted.rls) begin
       reg_isr_o.id     = 3'b011;
     // 2. Priority Level
-    end else if (intrpt_reg_q.rxdr) begin
+    end else if (intrpt_reg_qVoted.rxdr) begin
       reg_isr_o.id     = 3'b010;
     // 2. Priority Level
-    end else if (intrpt_reg_q.timeout) begin
+    end else if (intrpt_reg_qVoted.timeout) begin
       reg_isr_o.id     = 3'b110;
     // 3. Priority Level
-    end else if (intrpt_reg_q.thr_empty) begin
+    end else if (intrpt_reg_qVoted.thr_empty) begin
       reg_isr_o.id     = 3'b001;
     // 4. Priority Level
-    end else if (intrpt_reg_q.mstat) begin
+    end else if (intrpt_reg_qVoted.mstat) begin
       reg_isr_o.id     = 3'b000;
     end
 

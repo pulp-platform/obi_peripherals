@@ -41,10 +41,15 @@ module obi_uart_modem import obi_uart_pkg::*; #()
   // the ones read from or written to the modem status/control registers !
 
   //--Modem-Control-Signals-----------------------------------------------------------------------
-  logic sync_cts_n, sync_cts_n_d, sync_cts_n_q;
-  logic sync_dsr_n, sync_dsr_n_d, sync_dsr_n_q;
-  logic sync_ri_n, sync_ri_n_d,  sync_ri_n_q;
-  logic sync_cd_n, sync_cd_n_d,  sync_cd_n_q;
+  logic sync_cts_n, sync_cts_n_d, sync_cts_n_q, sync_cts_n_qVoted;
+  logic sync_dsr_n, sync_dsr_n_d, sync_dsr_n_q, sync_dsr_n_qVoted;
+  logic sync_ri_n, sync_ri_n_d,  sync_ri_n_q, sync_ri_n_qVoted;
+  logic sync_cd_n, sync_cd_n_d,  sync_cd_n_q, sync_cd_n_qVoted;
+
+  assign sync_cts_n_qVoted = sync_cts_n_q;
+  assign sync_dsr_n_qVoted = sync_dsr_n_q;
+  assign sync_ri_n_qVoted  = sync_ri_n_q;
+  assign sync_cd_n_qVoted  = sync_cd_n_q;
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // Modem Input Synchronisation //
@@ -146,9 +151,9 @@ module obi_uart_modem import obi_uart_pkg::*; #()
   assign reg_write_o.cd   = ~sync_cd_n_d;
 
     // Change status bits
-  assign reg_write_o.d_cts = sync_cts_n_d ^ sync_cts_n_q; // Delta: 1 if _d different from _q
-  assign reg_write_o.d_dsr = sync_dsr_n_d ^ sync_dsr_n_q; // Delta: 1 if _d different from _q
-  assign reg_write_o.te_ri = sync_ri_n_d & ~sync_ri_n_q;  // Trailing Edge: 1 on negedge
-  assign reg_write_o.d_cd  = sync_cd_n_d ^ sync_cd_n_q;   // Delta: 1 if _d different from _q
+  assign reg_write_o.d_cts = sync_cts_n_d ^ sync_cts_n_qVoted; // Delta: 1 if _d different from _q
+  assign reg_write_o.d_dsr = sync_dsr_n_d ^ sync_dsr_n_qVoted; // Delta: 1 if _d different from _q
+  assign reg_write_o.te_ri = sync_ri_n_d & ~sync_ri_n_qVoted;  // Trailing Edge: 1 on negedge
+  assign reg_write_o.d_cd  = sync_cd_n_d ^ sync_cd_n_qVoted;   // Delta: 1 if _d different from _q
 
 endmodule
