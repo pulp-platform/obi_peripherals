@@ -21,4 +21,5 @@ tmrg:
 	git apply obi_types_comment.patch
 	cd tmrg_files && $(TMRG) $(INCLUDES) $(FILES) --top-module=delta_counter
 	git apply -R obi_types_comment.patch
+	git apply tmrg_obi_types_fix.patch
 
