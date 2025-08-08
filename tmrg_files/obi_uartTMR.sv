@@ -67,6 +67,18 @@ import obi_uart_pkg::*;
 wire rxd_iC;
 wire rxd_iB;
 wire rxd_iA;
+wire ri_niC;
+wire ri_niB;
+wire ri_niA;
+wire dsr_niC;
+wire dsr_niB;
+wire dsr_niA;
+wire cts_niC;
+wire cts_niB;
+wire cts_niA;
+wire cd_niC;
+wire cd_niB;
+wire cd_niA;
 wor i_uart_txtmrErrorC;
 wor i_uart_rxtmrErrorC;
 wor i_uart_registertmrErrorC;
@@ -86,9 +98,25 @@ wor i_uart_modemtmrErrorA;
 wor i_uart_interruptstmrErrorA;
 wor i_uart_baudgentmrErrorA;
 wor txdTmrError;
+wor rts_noTmrError;
 wor reg_readTmrError;
+wor out2_noTmrError;
+wor out1_noTmrError;
+wor dtr_noTmrError;
 wire txd;
+wire rts_noC;
+wire rts_noB;
+wire rts_noA;
 wire reg_read_t reg_read;
+wire out2_noC;
+wire out2_noB;
+wire out2_noA;
+wire out1_noC;
+wire out1_noB;
+wire out1_noA;
+wire dtr_noC;
+wire dtr_noB;
+wire dtr_noA;
 logic rxdA;
 logic rxdB;
 logic rxdC;
@@ -140,14 +168,30 @@ obi_uart_registerTMR #(.obi_req_t(obi_req_t), .obi_rsp_t(obi_rsp_t)) i_uart_regi
 obi_uart_modemTMR i_uart_modem (
     .clk_i(clk_i),
     .rst_ni(rst_ni),
-    .cts_ni(cts_ni),
-    .dsr_ni(dsr_ni),
-    .ri_ni(ri_ni),
-    .cd_ni(cd_ni),
-    .rts_no(rts_no),
-    .dtr_no(dtr_no),
-    .out1_no(out1_no),
-    .out2_no(out2_no),
+    .cts_niA(cts_niA),
+    .cts_niB(cts_niB),
+    .cts_niC(cts_niC),
+    .dsr_niA(dsr_niA),
+    .dsr_niB(dsr_niB),
+    .dsr_niC(dsr_niC),
+    .ri_niA(ri_niA),
+    .ri_niB(ri_niB),
+    .ri_niC(ri_niC),
+    .cd_niA(cd_niA),
+    .cd_niB(cd_niB),
+    .cd_niC(cd_niC),
+    .rts_noA(rts_noA),
+    .rts_noB(rts_noB),
+    .rts_noC(rts_noC),
+    .dtr_noA(dtr_noA),
+    .dtr_noB(dtr_noB),
+    .dtr_noC(dtr_noC),
+    .out1_noA(out1_noA),
+    .out1_noB(out1_noB),
+    .out1_noC(out1_noC),
+    .out2_noA(out2_noA),
+    .out2_noB(out2_noB),
+    .out2_noC(out2_noC),
     .reg_read_iA(reg_readA),
     .reg_read_iB(reg_readB),
     .reg_read_iC(reg_readC),
@@ -264,12 +308,44 @@ obi_uart_interruptsTMR i_uart_interrupts (
     .tmrErrorC(i_uart_interruptstmrErrorC)
   );
 
+majorityVoter dtr_noVoter (
+    .inA(dtr_noA),
+    .inB(dtr_noB),
+    .inC(dtr_noC),
+    .out(dtr_no),
+    .tmrErr(dtr_noTmrError)
+  );
+
+majorityVoter out1_noVoter (
+    .inA(out1_noA),
+    .inB(out1_noB),
+    .inC(out1_noC),
+    .out(out1_no),
+    .tmrErr(out1_noTmrError)
+  );
+
+majorityVoter out2_noVoter (
+    .inA(out2_noA),
+    .inB(out2_noB),
+    .inC(out2_noC),
+    .out(out2_no),
+    .tmrErr(out2_noTmrError)
+  );
+
 majorityVoter #(.WIDTH(70)) reg_readVoter (
     .inA(reg_readA),
     .inB(reg_readB),
     .inC(reg_readC),
     .out(reg_read),
     .tmrErr(reg_readTmrError)
+  );
+
+majorityVoter rts_noVoter (
+    .inA(rts_noA),
+    .inB(rts_noB),
+    .inC(rts_noC),
+    .out(rts_no),
+    .tmrErr(rts_noTmrError)
   );
 
 majorityVoter txdVoter (
@@ -279,10 +355,38 @@ majorityVoter txdVoter (
     .out(txd),
     .tmrErr(txdTmrError)
   );
-assign tmrError = reg_readTmrError|txdTmrError;
+assign tmrError = dtr_noTmrError|out1_noTmrError|out2_noTmrError|reg_readTmrError|rts_noTmrError|txdTmrError;
 assign tmrErrorA = i_uart_baudgentmrErrorA|i_uart_interruptstmrErrorA|i_uart_modemtmrErrorA|i_uart_registertmrErrorA|i_uart_rxtmrErrorA|i_uart_txtmrErrorA;
 assign tmrErrorB = i_uart_baudgentmrErrorB|i_uart_interruptstmrErrorB|i_uart_modemtmrErrorB|i_uart_registertmrErrorB|i_uart_rxtmrErrorB|i_uart_txtmrErrorB;
 assign tmrErrorC = i_uart_baudgentmrErrorC|i_uart_interruptstmrErrorC|i_uart_modemtmrErrorC|i_uart_registertmrErrorC|i_uart_rxtmrErrorC|i_uart_txtmrErrorC;
+
+fanout cd_niFanout (
+    .in(cd_ni),
+    .outA(cd_niA),
+    .outB(cd_niB),
+    .outC(cd_niC)
+  );
+
+fanout cts_niFanout (
+    .in(cts_ni),
+    .outA(cts_niA),
+    .outB(cts_niB),
+    .outC(cts_niC)
+  );
+
+fanout dsr_niFanout (
+    .in(dsr_ni),
+    .outA(dsr_niA),
+    .outB(dsr_niB),
+    .outC(dsr_niC)
+  );
+
+fanout ri_niFanout (
+    .in(ri_ni),
+    .outA(ri_niA),
+    .outB(ri_niB),
+    .outC(ri_niC)
+  );
 
 fanout rxd_iFanout (
     .in(rxd_i),

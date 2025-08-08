@@ -29,21 +29,36 @@
 module obi_uart_modemTMR import obi_uart_pkg::*; (
   input logic clk_i,
   input logic rst_ni,
-  input logic cts_ni,
-  input logic dsr_ni,
-  input logic ri_ni,
-  input logic cd_ni,
-  output logic rts_no,
-  output logic dtr_no,
-  output logic out1_no,
-  output logic out2_no,
+  input logic cts_niA,
+  input logic cts_niB,
+  input logic cts_niC,
+  input logic dsr_niA,
+  input logic dsr_niB,
+  input logic dsr_niC,
+  input logic ri_niA,
+  input logic ri_niB,
+  input logic ri_niC,
+  input logic cd_niA,
+  input logic cd_niB,
+  input logic cd_niC,
+  output logic rts_noA,
+  output logic rts_noB,
+  output logic rts_noC,
+  output logic dtr_noA,
+  output logic dtr_noB,
+  output logic dtr_noC,
+  output logic out1_noA,
+  output logic out1_noB,
+  output logic out1_noC,
+  output logic out2_noA,
+  output logic out2_noB,
+  output logic out2_noC,
   input reg_read_t reg_read_iA,
   input reg_read_t reg_read_iB,
   input reg_read_t reg_read_iC,
   output msr_bits_t reg_write_oA,
   output msr_bits_t reg_write_oB,
   output msr_bits_t reg_write_oC,
-  output tmrError,
   output tmrErrorA,
   output tmrErrorB,
   output tmrErrorC
@@ -51,21 +66,9 @@ module obi_uart_modemTMR import obi_uart_pkg::*; (
 wire rst_niC;
 wire rst_niB;
 wire rst_niA;
-wire ri_niC;
-wire ri_niB;
-wire ri_niA;
-wire dsr_niC;
-wire dsr_niB;
-wire dsr_niA;
-wire cts_niC;
-wire cts_niB;
-wire cts_niA;
 wire clk_iC;
 wire clk_iB;
 wire clk_iA;
-wire cd_niC;
-wire cd_niB;
-wire cd_niA;
 wor sync_ri_n_qTmrErrorC;
 wor sync_dsr_n_qTmrErrorC;
 wor sync_cts_n_qTmrErrorC;
@@ -90,16 +93,6 @@ wor i_sync_ritmrErrorA;
 wor i_sync_dsrtmrErrorA;
 wor i_sync_ctstmrErrorA;
 wor i_sync_cdtmrErrorA;
-wor sync_ri_nTmrError;
-wor sync_dsr_nTmrError;
-wor sync_cts_nTmrError;
-wor sync_cd_nTmrError;
-wor reg_read_iTmrError;
-wire sync_ri_n;
-wire sync_dsr_n;
-wire sync_cts_n;
-wire sync_cd_n;
-wire reg_read_t reg_read_i;
 logic sync_cts_nA;
 logic sync_cts_nB;
 logic sync_cts_nC;
@@ -207,27 +200,79 @@ syncTMR #(.STAGES(NrSyncStages)) i_sync_cd (
 
 always_comb
   begin
-    if (reg_read_i.mcr.loopback==1'b1)
+    if (reg_read_iA.mcr.loopback==1'b1)
       begin
-        rts_no = 1'b1;
-        dtr_no = 1'b1;
-        out1_no = 1'b1;
-        out2_no = 1'b1;
-        sync_cts_n_d = ~reg_read_i.mcr.rts;
-        sync_dsr_n_d = ~reg_read_i.mcr.dtr;
-        sync_ri_n_d = ~reg_read_i.mcr.out1;
-        sync_cd_n_d = ~reg_read_i.mcr.out2;
+        rts_noA = 1'b1;
+        dtr_noA = 1'b1;
+        out1_noA = 1'b1;
+        out2_noA = 1'b1;
+        sync_cts_n_dA = ~reg_read_iA.mcr.rts;
+        sync_dsr_n_dA = ~reg_read_iA.mcr.dtr;
+        sync_ri_n_dA = ~reg_read_iA.mcr.out1;
+        sync_cd_n_dA = ~reg_read_iA.mcr.out2;
       end
     else
       begin
-        rts_no = ~reg_read_i.mcr.rts;
-        dtr_no = ~reg_read_i.mcr.dtr;
-        out1_no = ~reg_read_i.mcr.out1;
-        out2_no = ~reg_read_i.mcr.out2;
-        sync_cts_n_d = sync_cts_n;
-        sync_dsr_n_d = sync_dsr_n;
-        sync_ri_n_d = sync_ri_n;
-        sync_cd_n_d = sync_cd_n;
+        rts_noA = ~reg_read_iA.mcr.rts;
+        dtr_noA = ~reg_read_iA.mcr.dtr;
+        out1_noA = ~reg_read_iA.mcr.out1;
+        out2_noA = ~reg_read_iA.mcr.out2;
+        sync_cts_n_dA = sync_cts_nA;
+        sync_dsr_n_dA = sync_dsr_nA;
+        sync_ri_n_dA = sync_ri_nA;
+        sync_cd_n_dA = sync_cd_nA;
+      end
+  end
+
+always_comb
+  begin
+    if (reg_read_iB.mcr.loopback==1'b1)
+      begin
+        rts_noB = 1'b1;
+        dtr_noB = 1'b1;
+        out1_noB = 1'b1;
+        out2_noB = 1'b1;
+        sync_cts_n_dB = ~reg_read_iB.mcr.rts;
+        sync_dsr_n_dB = ~reg_read_iB.mcr.dtr;
+        sync_ri_n_dB = ~reg_read_iB.mcr.out1;
+        sync_cd_n_dB = ~reg_read_iB.mcr.out2;
+      end
+    else
+      begin
+        rts_noB = ~reg_read_iB.mcr.rts;
+        dtr_noB = ~reg_read_iB.mcr.dtr;
+        out1_noB = ~reg_read_iB.mcr.out1;
+        out2_noB = ~reg_read_iB.mcr.out2;
+        sync_cts_n_dB = sync_cts_nB;
+        sync_dsr_n_dB = sync_dsr_nB;
+        sync_ri_n_dB = sync_ri_nB;
+        sync_cd_n_dB = sync_cd_nB;
+      end
+  end
+
+always_comb
+  begin
+    if (reg_read_iC.mcr.loopback==1'b1)
+      begin
+        rts_noC = 1'b1;
+        dtr_noC = 1'b1;
+        out1_noC = 1'b1;
+        out2_noC = 1'b1;
+        sync_cts_n_dC = ~reg_read_iC.mcr.rts;
+        sync_dsr_n_dC = ~reg_read_iC.mcr.dtr;
+        sync_ri_n_dC = ~reg_read_iC.mcr.out1;
+        sync_cd_n_dC = ~reg_read_iC.mcr.out2;
+      end
+    else
+      begin
+        rts_noC = ~reg_read_iC.mcr.rts;
+        dtr_noC = ~reg_read_iC.mcr.dtr;
+        out1_noC = ~reg_read_iC.mcr.out1;
+        out2_noC = ~reg_read_iC.mcr.out2;
+        sync_cts_n_dC = sync_cts_nC;
+        sync_dsr_n_dC = sync_dsr_nC;
+        sync_ri_n_dC = sync_ri_nC;
+        sync_cd_n_dC = sync_cd_nC;
       end
   end
 
@@ -308,47 +353,6 @@ assign reg_write_oC.te_ri = sync_ri_n_dC&~sync_ri_n_qVotedC;
 assign reg_write_oA.d_cd = sync_cd_n_dA^sync_cd_n_qVotedA;
 assign reg_write_oB.d_cd = sync_cd_n_dB^sync_cd_n_qVotedB;
 assign reg_write_oC.d_cd = sync_cd_n_dC^sync_cd_n_qVotedC;
-
-majorityVoter #(.WIDTH(70)) reg_read_iVoter (
-    .inA(reg_read_iA),
-    .inB(reg_read_iB),
-    .inC(reg_read_iC),
-    .out(reg_read_i),
-    .tmrErr(reg_read_iTmrError)
-  );
-
-majorityVoter sync_cd_nVoter (
-    .inA(sync_cd_nA),
-    .inB(sync_cd_nB),
-    .inC(sync_cd_nC),
-    .out(sync_cd_n),
-    .tmrErr(sync_cd_nTmrError)
-  );
-
-majorityVoter sync_cts_nVoter (
-    .inA(sync_cts_nA),
-    .inB(sync_cts_nB),
-    .inC(sync_cts_nC),
-    .out(sync_cts_n),
-    .tmrErr(sync_cts_nTmrError)
-  );
-
-majorityVoter sync_dsr_nVoter (
-    .inA(sync_dsr_nA),
-    .inB(sync_dsr_nB),
-    .inC(sync_dsr_nC),
-    .out(sync_dsr_n),
-    .tmrErr(sync_dsr_nTmrError)
-  );
-
-majorityVoter sync_ri_nVoter (
-    .inA(sync_ri_nA),
-    .inB(sync_ri_nB),
-    .inC(sync_ri_nC),
-    .out(sync_ri_n),
-    .tmrErr(sync_ri_nTmrError)
-  );
-assign tmrError = reg_read_iTmrError|sync_cd_nTmrError|sync_cts_nTmrError|sync_dsr_nTmrError|sync_ri_nTmrError;
 
 majorityVoter sync_cd_n_qVoterA (
     .inA(sync_cd_n_qA),
@@ -449,39 +453,11 @@ majorityVoter sync_ri_n_qVoterC (
   );
 assign tmrErrorC = i_sync_cdtmrErrorC|i_sync_ctstmrErrorC|i_sync_dsrtmrErrorC|i_sync_ritmrErrorC|sync_cd_n_qTmrErrorC|sync_cts_n_qTmrErrorC|sync_dsr_n_qTmrErrorC|sync_ri_n_qTmrErrorC;
 
-fanout cd_niFanout (
-    .in(cd_ni),
-    .outA(cd_niA),
-    .outB(cd_niB),
-    .outC(cd_niC)
-  );
-
 fanout clk_iFanout (
     .in(clk_i),
     .outA(clk_iA),
     .outB(clk_iB),
     .outC(clk_iC)
-  );
-
-fanout cts_niFanout (
-    .in(cts_ni),
-    .outA(cts_niA),
-    .outB(cts_niB),
-    .outC(cts_niC)
-  );
-
-fanout dsr_niFanout (
-    .in(dsr_ni),
-    .outA(dsr_niA),
-    .outB(dsr_niB),
-    .outC(dsr_niC)
-  );
-
-fanout ri_niFanout (
-    .in(ri_ni),
-    .outA(ri_niA),
-    .outB(ri_niB),
-    .outC(ri_niC)
   );
 
 fanout rst_niFanout (

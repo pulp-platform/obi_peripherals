@@ -34,14 +34,6 @@ module obi_uart_modem import obi_uart_pkg::*; #()
 // tmrg do_not_triplicate i_sync_ri
 // tmrg do_not_triplicate i_sync_cd
 // tmrg tmr_error true
-// tmrg do_not_triplicate cts_ni
-// tmrg do_not_triplicate dsr_ni
-// tmrg do_not_triplicate ri_ni
-// tmrg do_not_triplicate cd_ni
-// tmrg do_not_triplicate rts_no
-// tmrg do_not_triplicate dtr_no
-// tmrg do_not_triplicate out1_no
-// tmrg do_not_triplicate out2_no
 
   // Flow control is left to SW. UART Modem Control only writes modem inputs to
   // register and sets modem outputs from the register.
