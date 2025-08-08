@@ -1,0 +1,85 @@
+diff --git a/tmrg_files/delta_counterTMR.sv b/tmrg_files/delta_counterTMR.sv
+index 181346c..15d2a68 100644
+--- a/tmrg_files/delta_counterTMR.sv
++++ b/tmrg_files/delta_counterTMR.sv
+@@ -197,6 +197,28 @@ logic overflow_qVotedC;
+     assign overflow_oA = overflow_qVotedA;
+     assign overflow_oB = overflow_qVotedB;
+     assign overflow_oC = overflow_qVotedC;
++
++    majorityVoter overflow_qVoterA (
++      .inA(overflow_qA),
++      .inB(overflow_qB),
++      .inC(overflow_qC),
++      .out(overflow_qVotedA),
++      .tmrErr(overflow_qTmrErrorA)
++    );
++    majorityVoter overflow_qVoterB (
++      .inA(overflow_qA),
++      .inB(overflow_qB),
++      .inC(overflow_qC),
++      .out(overflow_qVotedB),
++      .tmrErr(overflow_qTmrErrorB)
++    );
++    majorityVoter overflow_qVoterC (
++      .inA(overflow_qA),
++      .inB(overflow_qB),
++      .inC(overflow_qC),
++      .out(overflow_qVotedC),
++      .tmrErr(overflow_qTmrErrorC)
++    );
+   end
+ 
+ else
+@@ -204,6 +226,9 @@ else
+     assign overflow_oA = counter_qVotedA[WIDTH];
+     assign overflow_oB = counter_qVotedB[WIDTH];
+     assign overflow_oC = counter_qVotedC[WIDTH];
++    assign overflow_qTmrErrorA = 1'b0;
++    assign overflow_qTmrErrorB = 1'b0;
++    assign overflow_qTmrErrorC = 1'b0;
+   end
+ assign q_oA = counter_qVotedA[WIDTH - 1:0];
+ assign q_oB = counter_qVotedB[WIDTH - 1:0];
+@@ -334,13 +359,6 @@ majorityVoter #(.WIDTH( (((WIDTH>0) ? WIDTH : - WIDTH )+1) )) counter_qVoterA (
+     .tmrErr(counter_qTmrErrorA)
+   );
+ 
+-majorityVoter overflow_qVoterA (
+-    .inA(overflow_qA),
+-    .inB(overflow_qB),
+-    .inC(overflow_qC),
+-    .out(overflow_qVotedA),
+-    .tmrErr(overflow_qTmrErrorA)
+-  );
+ assign tmrErrorA = counter_qTmrErrorA|overflow_qTmrErrorA;
+ 
+ majorityVoter #(.WIDTH( (((WIDTH>0) ? WIDTH : - WIDTH )+1) )) counter_qVoterB (
+@@ -351,13 +369,6 @@ majorityVoter #(.WIDTH( (((WIDTH>0) ? WIDTH : - WIDTH )+1) )) counter_qVoterB (
+     .tmrErr(counter_qTmrErrorB)
+   );
+ 
+-majorityVoter overflow_qVoterB (
+-    .inA(overflow_qA),
+-    .inB(overflow_qB),
+-    .inC(overflow_qC),
+-    .out(overflow_qVotedB),
+-    .tmrErr(overflow_qTmrErrorB)
+-  );
+ assign tmrErrorB = counter_qTmrErrorB|overflow_qTmrErrorB;
+ 
+ majorityVoter #(.WIDTH( (((WIDTH>0) ? WIDTH : - WIDTH )+1) )) counter_qVoterC (
+@@ -368,13 +379,6 @@ majorityVoter #(.WIDTH( (((WIDTH>0) ? WIDTH : - WIDTH )+1) )) counter_qVoterC (
+     .tmrErr(counter_qTmrErrorC)
+   );
+ 
+-majorityVoter overflow_qVoterC (
+-    .inA(overflow_qA),
+-    .inB(overflow_qB),
+-    .inC(overflow_qC),
+-    .out(overflow_qVotedC),
+-    .tmrErr(overflow_qTmrErrorC)
+-  );
+ assign tmrErrorC = counter_qTmrErrorC|overflow_qTmrErrorC;
+ 
+ fanout clk_iFanout (

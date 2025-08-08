@@ -31,7 +31,10 @@ module counter #(
 // tmrg do_not_triplicate rst_ni
 // tmrg tmr_error true
 
-    delta_counter i_counter (
+    delta_counter #(
+        .WIDTH(WIDTH),
+        .STICKY_OVERFLOW(STICKY_OVERFLOW)
+    ) i_counter (
         .clk_i (clk_i),
         .rst_ni (rst_ni),
         .clear_i (clear_i),
