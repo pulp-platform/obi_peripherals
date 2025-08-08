@@ -6,7 +6,7 @@
 // - Hannah Pochert  <hpochert@ethz.ch>
 // - Philippe Sauter <phsauter@iis.ee.ethz.ch>
 
-`include "common_cells/registers.svh"
+// `include "common_cells/registers.svh"
 
 /// Synchronizes incoming modem signals, outputs modem signals and handles loopback
 module obi_uart_modem import obi_uart_pkg::*; #()
@@ -45,8 +45,8 @@ module obi_uart_modem import obi_uart_pkg::*; #()
   sync #(
     .STAGES (NrSyncStages)
   ) i_sync_cts (
-    .clk_i,
-    .rst_ni,
+    .clk_i (clk_i),
+    .rst_ni (rst_ni),
     .serial_i(cts_ni),
     .serial_o(sync_cts_n)
 
@@ -54,8 +54,8 @@ module obi_uart_modem import obi_uart_pkg::*; #()
   sync #(
     .STAGES (NrSyncStages)
   ) i_sync_dsr (
-    .clk_i,
-    .rst_ni,
+    .clk_i (clk_i),
+    .rst_ni (rst_ni),
     .serial_i(dsr_ni),
     .serial_o(sync_dsr_n)
   );
@@ -63,19 +63,19 @@ module obi_uart_modem import obi_uart_pkg::*; #()
   sync #(
     .STAGES (NrSyncStages)
   ) i_sync_ri (
-    .clk_i,
-    .rst_ni,
-    .serial_i(ri_ni),
-    .serial_o(sync_ri_n)
+    .clk_i (clk_i),
+    .rst_ni (rst_ni),
+    .serial_i (ri_ni),
+    .serial_o (sync_ri_n)
   );
 
   sync #(
     .STAGES (NrSyncStages)
   ) i_sync_cd (
-    .clk_i,
-    .rst_ni,
-    .serial_i(cd_ni),
-    .serial_o(sync_cd_n)
+    .clk_i (clk_i),
+    .rst_ni (rst_ni),
+    .serial_i (cd_ni),
+    .serial_o (sync_cd_n)
   );
 
 
@@ -107,10 +107,24 @@ module obi_uart_modem import obi_uart_pkg::*; #()
     end
   end
 
-  `FF(sync_cts_n_q, sync_cts_n_d, '1, clk_i, rst_ni)
-  `FF(sync_dsr_n_q, sync_dsr_n_d, '1, clk_i, rst_ni)
-  `FF(sync_ri_n_q, sync_ri_n_d, '1, clk_i, rst_ni)
-  `FF(sync_cd_n_q, sync_cd_n_d, '1, clk_i, rst_ni)
+  // `FF(sync_cts_n_q, sync_cts_n_d, '1, clk_i, rst_ni)
+  // `FF(sync_dsr_n_q, sync_dsr_n_d, '1, clk_i, rst_ni)
+  // `FF(sync_ri_n_q, sync_ri_n_d, '1, clk_i, rst_ni)
+  // `FF(sync_cd_n_q, sync_cd_n_d, '1, clk_i, rst_ni)
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      sync_cts_n_q <= '1;
+      sync_dsr_n_q <= '1;
+      sync_ri_n_q  <= '1;
+      sync_cd_n_q  <= '1;
+    end else begin
+      sync_cts_n_q <= sync_cts_n_d;
+      sync_dsr_n_q <= sync_dsr_n_d;
+      sync_ri_n_q  <= sync_ri_n_d;
+      sync_cd_n_q  <= sync_cd_n_d;
+    end
+  end
 
 
   ////////////////////////////////////////////////////////////////////////////////////////////////

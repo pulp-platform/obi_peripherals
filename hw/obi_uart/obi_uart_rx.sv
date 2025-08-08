@@ -6,7 +6,7 @@
 // - Hannah Pochert  <hpochert@ethz.ch>
 // - Philippe Sauter <phsauter@iis.ee.ethz.ch>
 
-`include "common_cells/registers.svh"
+// `include "common_cells/registers.svh"
 
 module obi_uart_rx import obi_uart_pkg::*; #()
 (
@@ -101,8 +101,8 @@ module obi_uart_rx import obi_uart_pkg::*; #()
     .WIDTH          (5),
     .STICKY_OVERFLOW(0)
   ) i_counter (
-    .clk_i,
-    .rst_ni,
+    .clk_i (clk_i),
+    .rst_ni (rst_ni),
     .clear_i   (timing_clear),         // Synchronous clear: Sets Counter 0 in the next cycle
     .en_i      (oversample_rate_edge_i),
     .load_i    (timing_load),
@@ -120,7 +120,14 @@ module obi_uart_rx import obi_uart_pkg::*; #()
   // Edge is high for one clk_i cycle
   assign timing_bit_center_edge = (timing_bit_center_d & ~timing_bit_center_q) ? 1'b1 : 1'b0;
 
-  `FF(timing_bit_center_q, timing_bit_center_d, '0, clk_i, rst_ni)
+  // `FF(timing_bit_center_q, timing_bit_center_d, '0, clk_i, rst_ni)
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      timing_bit_center_q <= '0;
+    end else begin
+      timing_bit_center_q <= timing_bit_center_d;
+    end
+  end
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // Input Stages //
@@ -132,8 +139,8 @@ module obi_uart_rx import obi_uart_pkg::*; #()
   sync #(
     .STAGES (NrSyncStages)
   ) i_sync (
-    .clk_i,
-    .rst_ni,
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
     .serial_i(rxd_i),
     .serial_o(sync_rxd)
   );
@@ -169,22 +176,28 @@ module obi_uart_rx import obi_uart_pkg::*; #()
 
   end
 
-  `FF(high_count_q, high_count_d, '0, clk_i, rst_ni)
-  `FF(filtered_rxd_q, filtered_rxd_d, 1'b1, clk_i, rst_ni)
+  // `FF(high_count_q, high_count_d, '0, clk_i, rst_ni)
+  // `FF(filtered_rxd_q, filtered_rxd_d, 1'b1, clk_i, rst_ni)
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      high_count_q <= '0;
+      filtered_rxd_q <= 1'b1;
+    end else begin
+      high_count_q <= high_count_d;
+      filtered_rxd_q <= filtered_rxd_d;
+    end
+  end
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // FIFO Instantiation//
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   fifo_v3 # (
-    .FALL_THROUGH(),
     .DATA_WIDTH  (11),
-    .DEPTH       (16),
-    .dtype       (),
-    .ADDR_DEPTH  ()  // DO NOT OVERWRITE THIS PARAMETER
+    .DEPTH       (16)
   ) i_fifo_v3 (
-    .clk_i,                   // Clock
-    .rst_ni,                  // Asynchronous reset active low
+    .clk_i     (clk_i),       // Clock
+    .rst_ni    (rst_ni),      // Asynchronous reset active low
     .flush_i   (fifo_clear),  // flush the queue
     .testmode_i(1'b0),
     // status flags
@@ -545,30 +558,83 @@ module obi_uart_rx import obi_uart_pkg::*; #()
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   //--FIFO----------------------------------------------------------------------------------------
-  `FF(fifo_error_index_q, fifo_error_index_d, '0, clk_i, rst_ni)
-  `FF(timeout_count_q, timeout_count_d, '0, clk_i, rst_ni)
+  // `FF(fifo_error_index_q, fifo_error_index_d, '0, clk_i, rst_ni)
+  // `FF(timeout_count_q, timeout_count_d, '0, clk_i, rst_ni)
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      fifo_error_index_q <= '0;
+      timeout_count_q <= '0;
+    end else begin
+      fifo_error_index_q <= fifo_error_index_d;
+      timeout_count_q <= timeout_count_d;
+    end
+  end
 
   //--Write-RHR-----------------------------------------------------------------------------------
-  `FF(rhr_full_q, rhr_full_d, '0, clk_i, rst_ni)
+  // `FF(rhr_full_q, rhr_full_d, '0, clk_i, rst_ni)
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      rhr_full_q <= '0;
+    end else begin
+      rhr_full_q <= rhr_full_d;
+    end
+  end
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // Statemachine Sequential//
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   //--Statelogic----------------------------------------------------------------------------------
-  `FF(state_q, state_d, RXIDLE, clk_i, rst_ni)
+  // `FF(state_q, state_d, RXIDLE, clk_i, rst_ni)
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      state_q <= RXIDLE;
+    end else begin
+      state_q <= state_d;
+    end
+  end
 
   //--RSR-----------------------------------------------------------------------------------------
-  `FF(rsr_q, rsr_d, '0, clk_i, rst_ni)
-  `FF(bitcount_q, bitcount_d, '0, clk_i, rst_ni)
+  // `FF(rsr_q, rsr_d, '0, clk_i, rst_ni)
+  // `FF(bitcount_q, bitcount_d, '0, clk_i, rst_ni)
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      rsr_q <= '0;
+      bitcount_q <= '0;
+    end else begin
+      rsr_q <= rsr_d;
+      bitcount_q <= bitcount_d;
+    end
+  end
 
   //--Parity--------------------------------------------------------------------------------------
-  `FF(parity_err_q, parity_err_d, '0, clk_i, rst_ni)
+  // `FF(parity_err_q, parity_err_d, '0, clk_i, rst_ni)
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      parity_err_q <= '0;
+    end else begin
+      parity_err_q <= parity_err_d;
+    end
+  end
 
   //--Stop----------------------------------------------------------------------------------------
-  `FF(framing_err_q, framing_err_d, '0, clk_i, rst_ni)
+  // `FF(framing_err_q, framing_err_d, '0, clk_i, rst_ni)
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      framing_err_q <= '0;
+    end else begin
+      framing_err_q <= framing_err_d;
+    end
+  end
 
   //--Break-Interrupt-----------------------------------------------------------------------------
-  `FF(break_q, break_d, '0, clk_i, rst_ni)
+  // `FF(break_q, break_d, '0, clk_i, rst_ni)
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      break_q <= '0;
+    end else begin
+      break_q <= break_d;
+    end
+  end
 
 endmodule
