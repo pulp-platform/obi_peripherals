@@ -26,14 +26,14 @@ module sync #(
 
    (* dont_touch = "true" *)
    (* async_reg = "true" *)
-   logic [STAGES-1:0] reg_q, sync_qVoted;
-    assign sync_qVoted = reg_q;
+   logic [STAGES-1:0] reg_q, reg_qVoted;
+    assign reg_qVoted = reg_q;
 
     always_ff @(posedge clk_i, negedge rst_ni) begin
         if (!rst_ni) begin
             reg_q <= {STAGES{ResetValue}};
         end else begin
-            reg_q <= {sync_qVoted[STAGES-2:0], serial_i};
+            reg_q <= {reg_qVoted[STAGES-2:0], serial_i};
         end
     end
 

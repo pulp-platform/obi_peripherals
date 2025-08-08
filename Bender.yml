@@ -22,3 +22,17 @@ sources:
   - hw/obi_uart/obi_uart_tx.sv
   - hw/obi_uart/obi_uart_register.sv
   - hw/obi_uart/obi_uart.sv
+  - target: uart_tmrg
+    files:
+      - tmrg_files/delta_counterTMR.sv
+      - tmrg_files/fifo_v3TMR.sv
+      - tmrg_files/syncTMR.sv
+      - tmrg_files/counterTMR.sv
+      - tmrg_files/obi_uart_baudgenTMR.sv
+      - tmrg_files/obi_uart_interruptsTMR.sv
+      - tmrg_files/obi_uart_modemTMR.sv
+      - tmrg_files/obi_uart_rxTMR.sv
+      - tmrg_files/obi_uart_txTMR.sv
+      - tmrg_files/obi_uart_registerTMR.sv
+      - tmrg_files/obi_uartTMR.sv
+      - tmrg_files/obi_uart_registerTMR.sv
