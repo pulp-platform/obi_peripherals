@@ -113,15 +113,15 @@ logic [ADDR_DEPTH:0] status_cnt_qC;
 logic [ADDR_DEPTH:0] status_cnt_qVotedA;
 logic [ADDR_DEPTH:0] status_cnt_qVotedB;
 logic [ADDR_DEPTH:0] status_cnt_qVotedC;
-logic [DATA_WIDTH - 1:0] [FifoDepth - 1:0] mem_nA;
-logic [DATA_WIDTH - 1:0] [FifoDepth - 1:0] mem_nB;
-logic [DATA_WIDTH - 1:0] [FifoDepth - 1:0] mem_nC;
-logic [DATA_WIDTH - 1:0] [FifoDepth - 1:0] mem_qA;
-logic [DATA_WIDTH - 1:0] [FifoDepth - 1:0] mem_qB;
-logic [DATA_WIDTH - 1:0] [FifoDepth - 1:0] mem_qC;
-logic [DATA_WIDTH - 1:0] [FifoDepth - 1:0] mem_qVotedA;
-logic [DATA_WIDTH - 1:0] [FifoDepth - 1:0] mem_qVotedB;
-logic [DATA_WIDTH - 1:0] [FifoDepth - 1:0] mem_qVotedC;
+logic [FifoDepth - 1:0] [DATA_WIDTH - 1:0] mem_nA;
+logic [FifoDepth - 1:0] [DATA_WIDTH - 1:0] mem_nB;
+logic [FifoDepth - 1:0] [DATA_WIDTH - 1:0] mem_nC;
+logic [FifoDepth - 1:0] [DATA_WIDTH - 1:0] mem_qA;
+logic [FifoDepth - 1:0] [DATA_WIDTH - 1:0] mem_qB;
+logic [FifoDepth - 1:0] [DATA_WIDTH - 1:0] mem_qC;
+logic [FifoDepth - 1:0] [DATA_WIDTH - 1:0] mem_qVotedA;
+logic [FifoDepth - 1:0] [DATA_WIDTH - 1:0] mem_qVotedB;
+logic [FifoDepth - 1:0] [DATA_WIDTH - 1:0] mem_qVotedC;
 assign usage_oA = status_cnt_qVotedA[ADDR_DEPTH - 1:0];
 assign usage_oB = status_cnt_qVotedB[ADDR_DEPTH - 1:0];
 assign usage_oC = status_cnt_qVotedC[ADDR_DEPTH - 1:0];
@@ -397,7 +397,7 @@ always_ff @( posedge clk_iC or negedge rst_niC )
 
   end
 
-majorityVoter #(.WIDTH( ((((DATA_WIDTH-1)>0) ? (DATA_WIDTH-1) : - ( DATA_WIDTH-1 ) )+1)  *  ((((FifoDepth-1)>0) ? (FifoDepth-1) : - ( FifoDepth-1 ) )+1) )) mem_qVoterA (
+majorityVoter #(.WIDTH( ((((FifoDepth-1)>0) ? (FifoDepth-1) : - ( FifoDepth-1 ) )+1)  *  ((((DATA_WIDTH-1)>0) ? (DATA_WIDTH-1) : - ( DATA_WIDTH-1 ) )+1) )) mem_qVoterA (
     .inA(mem_qA),
     .inB(mem_qB),
     .inC(mem_qC),
@@ -430,7 +430,7 @@ majorityVoter #(.WIDTH( ((((ADDR_DEPTH-1)>0) ? (ADDR_DEPTH-1) : - ( ADDR_DEPTH-1
   );
 assign tmrErrorA = mem_qTmrErrorA|read_pointer_qTmrErrorA|status_cnt_qTmrErrorA|write_pointer_qTmrErrorA;
 
-majorityVoter #(.WIDTH( ((((DATA_WIDTH-1)>0) ? (DATA_WIDTH-1) : - ( DATA_WIDTH-1 ) )+1)  *  ((((FifoDepth-1)>0) ? (FifoDepth-1) : - ( FifoDepth-1 ) )+1) )) mem_qVoterB (
+majorityVoter #(.WIDTH( ((((FifoDepth-1)>0) ? (FifoDepth-1) : - ( FifoDepth-1 ) )+1)  *  ((((DATA_WIDTH-1)>0) ? (DATA_WIDTH-1) : - ( DATA_WIDTH-1 ) )+1) )) mem_qVoterB (
     .inA(mem_qA),
     .inB(mem_qB),
     .inC(mem_qC),
@@ -463,7 +463,7 @@ majorityVoter #(.WIDTH( ((((ADDR_DEPTH-1)>0) ? (ADDR_DEPTH-1) : - ( ADDR_DEPTH-1
   );
 assign tmrErrorB = mem_qTmrErrorB|read_pointer_qTmrErrorB|status_cnt_qTmrErrorB|write_pointer_qTmrErrorB;
 
-majorityVoter #(.WIDTH( ((((DATA_WIDTH-1)>0) ? (DATA_WIDTH-1) : - ( DATA_WIDTH-1 ) )+1)  *  ((((FifoDepth-1)>0) ? (FifoDepth-1) : - ( FifoDepth-1 ) )+1) )) mem_qVoterC (
+majorityVoter #(.WIDTH( ((((FifoDepth-1)>0) ? (FifoDepth-1) : - ( FifoDepth-1 ) )+1)  *  ((((DATA_WIDTH-1)>0) ? (DATA_WIDTH-1) : - ( DATA_WIDTH-1 ) )+1) )) mem_qVoterC (
     .inA(mem_qA),
     .inB(mem_qB),
     .inC(mem_qC),

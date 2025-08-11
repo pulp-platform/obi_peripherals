@@ -50,7 +50,7 @@ module fifo_v3 #(
     // this integer will be truncated by the synthesis tool
     logic [ADDR_DEPTH:0] status_cnt_n, status_cnt_q, status_cnt_qVoted;
     // actual memory
-    logic [DATA_WIDTH-1:0] [FifoDepth - 1:0] mem_n, mem_q, mem_qVoted;
+    logic  [FifoDepth - 1:0][DATA_WIDTH-1:0] mem_n, mem_q, mem_qVoted;
 
     assign read_pointer_qVoted = read_pointer_q;
     assign write_pointer_qVoted = write_pointer_q;
