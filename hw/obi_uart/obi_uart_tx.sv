@@ -60,7 +60,7 @@ module obi_uart_tx #()
   // FIFO Instantiation //
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  fifo_v3 # (
+  cc_fifo # (
     .FALL_THROUGH(1'b0),
     .DATA_WIDTH  (8),
     .DEPTH       (16)
@@ -68,7 +68,6 @@ module obi_uart_tx #()
     .clk_i,
     .rst_ni,
     .flush_i   (fifo_clear),  // flush the queue
-    .testmode_i(1'b0      ),
     // status flags
     .full_o    (fifo_full),   // queue is full
     .empty_o   (fifo_empty),  // queue is empty

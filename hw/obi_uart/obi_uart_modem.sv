@@ -42,7 +42,7 @@ module obi_uart_modem import obi_uart_pkg::*; #()
   // Modem Input Synchronisation //
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  sync #(
+  cc_sync #(
     .STAGES (NrSyncStages)
   ) i_sync_cts (
     .clk_i,
@@ -51,7 +51,7 @@ module obi_uart_modem import obi_uart_pkg::*; #()
     .serial_o(sync_cts_n)
 
   );
-  sync #(
+  cc_sync #(
     .STAGES (NrSyncStages)
   ) i_sync_dsr (
     .clk_i,
@@ -60,7 +60,7 @@ module obi_uart_modem import obi_uart_pkg::*; #()
     .serial_o(sync_dsr_n)
   );
 
-  sync #(
+  cc_sync #(
     .STAGES (NrSyncStages)
   ) i_sync_ri (
     .clk_i,
@@ -69,7 +69,7 @@ module obi_uart_modem import obi_uart_pkg::*; #()
     .serial_o(sync_ri_n)
   );
 
-  sync #(
+  cc_sync #(
     .STAGES (NrSyncStages)
   ) i_sync_cd (
     .clk_i,

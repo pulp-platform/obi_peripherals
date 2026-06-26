@@ -58,7 +58,7 @@ module obi_uart_baudgen import obi_uart_pkg::*; #()
   // clear on reaching the divisor or when configuration changes
   assign oversample_clear = oversample_is_divisor | reg_read_i.obi_write_dllm;
 
-  counter #(
+  cc_counter #(
     .WIDTH           (16),
     .STICKY_OVERFLOW (0)
   ) i_oversample_counter (
@@ -84,7 +84,7 @@ module obi_uart_baudgen import obi_uart_pkg::*; #()
 
   assign baud_clear = baud_count_overflow | reg_read_i.obi_write_dllm;
 
-  counter #(
+  cc_counter #(
     .WIDTH          (4),
     .STICKY_OVERFLOW(0)
   ) i_baudrate_counter (

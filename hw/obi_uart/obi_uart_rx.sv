@@ -97,7 +97,7 @@ module obi_uart_rx import obi_uart_pkg::*; #()
   assign timing_clear = ((timing_count == 5'b01111) && oversample_rate_edge_i)
                         | (timing_init_clear) ? 1'b1 : 1'b0;
 
-  counter #(
+  cc_counter #(
     .WIDTH          (5),
     .STICKY_OVERFLOW(0)
   ) i_counter (
@@ -129,7 +129,7 @@ module obi_uart_rx import obi_uart_pkg::*; #()
   //----------------------------------------------------------------------------------------------
   // 2-Stage Input Synchronization
   //----------------------------------------------------------------------------------------------
-  sync #(
+  cc_sync #(
     .STAGES (NrSyncStages)
   ) i_sync (
     .clk_i,
@@ -171,17 +171,13 @@ module obi_uart_rx import obi_uart_pkg::*; #()
   // FIFO Instantiation//
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  fifo_v3 # (
-    .FALL_THROUGH(),
+  cc_fifo # (
     .DATA_WIDTH  (11),
-    .DEPTH       (16),
-    .dtype       (),
-    .ADDR_DEPTH  ()  // DO NOT OVERWRITE THIS PARAMETER
+    .DEPTH       (16)
   ) i_fifo_v3 (
     .clk_i,                   // Clock
     .rst_ni,                  // Asynchronous reset active low
     .flush_i   (fifo_clear),  // flush the queue
-    .testmode_i(1'b0),
     // status flags
     .full_o    (fifo_full),   // queue is full
     .empty_o   (fifo_empty),  // queue is empty
