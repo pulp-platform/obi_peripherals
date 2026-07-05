@@ -45,7 +45,7 @@ module obi_uart_rx import obi_uart_pkg::*; #()
   logic fifo_clear;
   logic fifo_full;
   logic fifo_empty;
-  logic [3:0] fifo_usage;
+  logic [cc_pkg::cnt_width(16)-1:0] fifo_usage;
   logic [10:0] fifo_data_i;
   logic [10:0] fifo_data_o;
   logic fifo_push;
@@ -98,12 +98,12 @@ module obi_uart_rx import obi_uart_pkg::*; #()
                         | (timing_init_clear) ? 1'b1 : 1'b0;
 
   cc_counter #(
-    .WIDTH          (5),
-    .STICKY_OVERFLOW(0)
+    .Width          (5),
+    .StickyOverflow (0)
   ) i_counter (
     .clk_i,
     .rst_ni,
-    .clear_i   (timing_clear),         // Synchronous clear: Sets Counter 0 in the next cycle
+    .clr_i     (timing_clear),         // Synchronous clear: Sets Counter 0 in the next cycle
     .en_i      (oversample_rate_edge_i),
     .load_i    (timing_load),
     .down_i    (1'b0),                 // Always count upwards
@@ -172,12 +172,13 @@ module obi_uart_rx import obi_uart_pkg::*; #()
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   cc_fifo # (
-    .DATA_WIDTH  (11),
-    .DEPTH       (16)
+    .DataWidth   (11),
+    .Depth       (16)
   ) i_fifo_v3 (
     .clk_i,                   // Clock
     .rst_ni,                  // Asynchronous reset active low
     .flush_i   (fifo_clear),  // flush the queue
+    .clr_i     (1'b0),
     // status flags
     .full_o    (fifo_full),   // queue is full
     .empty_o   (fifo_empty),  // queue is empty

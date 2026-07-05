@@ -59,12 +59,12 @@ module obi_uart_baudgen import obi_uart_pkg::*; #()
   assign oversample_clear = oversample_is_divisor | reg_read_i.obi_write_dllm;
 
   cc_counter #(
-    .WIDTH           (16),
-    .STICKY_OVERFLOW (0)
+    .Width           (16),
+    .StickyOverflow  (0)
   ) i_oversample_counter (
     .clk_i,
     .rst_ni,
-    .clear_i   ( oversample_clear ), // Synchronous clear: Sets Counter 0 in the next cycle
+    .clr_i     ( oversample_clear ), // Synchronous clear: Sets Counter 0 in the next cycle
     .en_i      ( divisor_valid    ), // Count only if configuration is high
     .load_i    ( 1'b0             ),
     .down_i    ( 1'b0             ), // Count upwards
@@ -85,12 +85,12 @@ module obi_uart_baudgen import obi_uart_pkg::*; #()
   assign baud_clear = baud_count_overflow | reg_read_i.obi_write_dllm;
 
   cc_counter #(
-    .WIDTH          (4),
-    .STICKY_OVERFLOW(0)
+    .Width          (4),
+    .StickyOverflow (0)
   ) i_baudrate_counter (
     .clk_i,
     .rst_ni,
-    .clear_i   ( baud_clear            ), // Synchronous clear: Sets Counter 0 in the next cycle
+    .clr_i     ( baud_clear            ), // Synchronous clear: Sets Counter 0 in the next cycle
     .en_i      ( oversample_is_divisor ), // Count every time oversample counter hits its target
     .load_i    ( 1'b0                  ),
     .down_i    ( 1'b0                  ), // Count upwards

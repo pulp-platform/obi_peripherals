@@ -37,7 +37,7 @@ module obi_uart_tx #()
   logic [7:0] fifo_data_o;
   logic fifo_push;
   logic fifo_pop;
-  logic [3:0] fifo_usage;
+  logic [cc_pkg::cnt_width(16)-1:0] fifo_usage;
 
   //--THR-Full------------------------------------------------------------------------------------
   logic thr_full_q, thr_full_d;
@@ -61,13 +61,14 @@ module obi_uart_tx #()
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   cc_fifo # (
-    .FALL_THROUGH(1'b0),
-    .DATA_WIDTH  (8),
-    .DEPTH       (16)
+    .FallThrough (1'b0),
+    .DataWidth   (8),
+    .Depth       (16)
   ) i_fifo_v3 (
     .clk_i,
     .rst_ni,
     .flush_i   (fifo_clear),  // flush the queue
+    .clr_i     (1'b0),
     // status flags
     .full_o    (fifo_full),   // queue is full
     .empty_o   (fifo_empty),  // queue is empty
