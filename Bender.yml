@@ -9,7 +9,7 @@ package:
     - "Hannah Pochert  <hpochert@ethz.ch>"
 
 dependencies:
-  common_cells: { git: "https://github.com/pulp-platform/common_cells.git",   rev: v2-test   }
+  common_cells: { git: "https://github.com/pulp-platform/common_cells.git",   rev: "65881ba0300209f181ddd34a12a8a2e5df7c07c8" }
   obi:          { git: "https://github.com/pulp-platform/obi.git",            version: 0.1.3 }
 
 sources:
