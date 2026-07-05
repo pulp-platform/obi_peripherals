@@ -129,8 +129,8 @@ module obi_uart_rx import obi_uart_pkg::*; #()
   //----------------------------------------------------------------------------------------------
   // 2-Stage Input Synchronization
   //----------------------------------------------------------------------------------------------
-  cc_sync #(
-    .STAGES (NrSyncStages)
+  tc_sync #(
+    .Stages (NrSyncStages)
   ) i_sync (
     .clk_i,
     .rst_ni,
