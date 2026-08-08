@@ -22,3 +22,8 @@ sources:
   - obi_uart/rtl/obi_uart_tx.sv
   - obi_uart/rtl/obi_uart_register.sv
   - obi_uart/rtl/obi_uart.sv
+
+  - target: any(simulation, verilator)
+    files:
+      - obi_uart/dv/tb/tb_obi_uart_elab.sv
+      - obi_uart/dv/tb/tb_obi_uart_rx_smoke.sv
