@@ -9,8 +9,8 @@ package:
     - "Hannah Pochert  <hpochert@ethz.ch>"
 
 dependencies:
-  common_cells: { git: "https://github.com/pulp-platform/common_cells.git",   version: 1.37.0 }
-  obi:          { git: "https://github.com/pulp-platform/obi.git",            version: 0.1.3  }
+  common_cells: { git: "https://github.com/pulp-platform/common_cells.git",   rev: "v1.37.0" }
+  obi:          { git: "https://github.com/pulp-platform/obi.git",            rev: "v0.1.3"  }
 
 sources:
   # obi_uart
@@ -22,3 +22,8 @@ sources:
   - obi_uart/rtl/obi_uart_tx.sv
   - obi_uart/rtl/obi_uart_register.sv
   - obi_uart/rtl/obi_uart.sv
+
+  - target: any(simulation, verilator)
+    files:
+      - obi_uart/dv/tb/tb_obi_uart_elab.sv
+      - obi_uart/dv/tb/tb_obi_uart_rx_smoke.sv
