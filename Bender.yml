@@ -26,4 +26,7 @@ sources:
   - target: any(simulation, verilator)
     files:
       - obi_uart/dv/tb/tb_obi_uart_elab.sv
+      - obi_uart/dv/tb/tb_obi_uart_rx_fifo_deep.sv
+      - obi_uart/dv/tb/tb_obi_uart_rx_fifo.sv
+      - obi_uart/dv/tb/tb_obi_uart_rx_line_status.sv
       - obi_uart/dv/tb/tb_obi_uart_rx_smoke.sv
