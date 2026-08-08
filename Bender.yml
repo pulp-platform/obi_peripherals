@@ -14,11 +14,11 @@ dependencies:
 
 sources:
   # obi_uart
-  - hw/obi_uart/obi_uart_pkg.sv
-  - hw/obi_uart/obi_uart_baudgen.sv
-  - hw/obi_uart/obi_uart_interrupts.sv
-  - hw/obi_uart/obi_uart_modem.sv
-  - hw/obi_uart/obi_uart_rx.sv
-  - hw/obi_uart/obi_uart_tx.sv
-  - hw/obi_uart/obi_uart_register.sv
-  - hw/obi_uart/obi_uart.sv
+  - obi_uart/rtl/obi_uart_pkg.sv
+  - obi_uart/rtl/obi_uart_baudgen.sv
+  - obi_uart/rtl/obi_uart_interrupts.sv
+  - obi_uart/rtl/obi_uart_modem.sv
+  - obi_uart/rtl/obi_uart_rx.sv
+  - obi_uart/rtl/obi_uart_tx.sv
+  - obi_uart/rtl/obi_uart_register.sv
+  - obi_uart/rtl/obi_uart.sv
