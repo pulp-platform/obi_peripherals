@@ -37,6 +37,8 @@ module tb_obi_uart_rx_fifo_deep (
     lcr:           '{dlab: 1'b0, set_break: 1'b0, force_par: 1'b0, even_par: 1'b0,
                      par_en: 1'b0, stop_bits: 1'b0, word_len: 2'b11},
     mcr:           '0,
+    lsr:           '0,
+    msr:           '0,
     dll:           '0,
     dlm:           '0,
     obi_read_rhr:  obi_read_rhr,
