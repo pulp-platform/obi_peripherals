@@ -56,6 +56,19 @@ module obi_uart_tx #()
 
   logic txd_q, txd_d;
 
+  tx_reg_write_t reg_write_thr;
+  tx_reg_write_t reg_write_status;
+  tx_reg_write_t reg_write_after_thr;
+
+  logic thr_full_write_valid;
+  logic thr_full_write_value;
+  logic thr_full_fsm_valid;
+  logic thr_full_fsm_value;
+  logic thr_full_fifo_valid;
+  logic thr_full_fifo_value;
+  logic thr_full_after_thr;
+  logic thr_full_after_fsm;
+
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // FIFO Instantiation //
   ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -82,110 +95,101 @@ module obi_uart_tx #()
   );
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
-  // General Logic //
+  // Decode Logic //
   ////////////////////////////////////////////////////////////////////////////////////////////////
-  always_comb begin
-    //--------------------------------------------------------------------------------------------
-    // Defaults
-    //--------------------------------------------------------------------------------------------
-    thr_full_d    = thr_full_q;
-    word_len_mask = '0;
-
-    //--FIFO Combinational------------------------------------------------------------------------
-    fifo_clear  = 1'b0;
-    fifo_push   = 1'b0;
-    fifo_data_i = '0;
-
-    //--Register Interface------------------------------------------------------------------------
-    reg_write_o = '0;
-
-    //--Statemachine Combinational----------------------------------------------------------------
-    state_d       = state_q;     // Pass along state
-
-    txd_o         = txd_q & ~reg_read_i.lcr.set_break; // UART Output Assignment
-    txd_d         = txd_q;       // UART Output store for one bit time
-
-    fifo_pop      = 1'b0;        // Read and Remove Byte From FIFO
-
-    tsr_d         = tsr_q;       //TSR
-    tsr_count_d   = tsr_count_q; //TSR
-    tsr_finish    = 1'b0;        //TSR
-    tsr_empty     = 1'b0;        //TSR
-
-    //--------------------------------------------------------------------------------------------
-    // Word Length
-    //--------------------------------------------------------------------------------------------
-    case (reg_read_i.lcr.word_len)
-      2'b00: word_len_bits = 3'b100; // 5 Bits (4th index in tsr)
-      2'b01: word_len_bits = 3'b101; // 6 Bits (5th index in tsr)
-      2'b10: word_len_bits = 3'b110; // 7 Bits (6th index in tsr)
-      2'b11: word_len_bits = 3'b111; // 8 Bits (7th index in tsr)
-      default: word_len_bits = 3'b111;
+  always_comb begin : tx_decode_comb
+    unique case (reg_read_i.lcr.word_len)
+      2'b00: begin
+        word_len_bits = 3'b100; // 5 bits, last index in TSR.
+        word_len_mask = 8'b0001_1111;
+      end
+      2'b01: begin
+        word_len_bits = 3'b101; // 6 bits.
+        word_len_mask = 8'b0011_1111;
+      end
+      2'b10: begin
+        word_len_bits = 3'b110; // 7 bits.
+        word_len_mask = 8'b0111_1111;
+      end
+      2'b11: begin
+        word_len_bits = 3'b111; // 8 bits.
+        word_len_mask = 8'b1111_1111;
+      end
+      default: begin
+        word_len_bits = 3'b111;
+        word_len_mask = 8'b1111_1111;
+      end
     endcase
-
-    for (int i = 0; i <= word_len_bits; i = i + 1) begin
-      word_len_mask[i] = 1'b1;
-    end
-
-    //--------------------------------------------------------------------------------------------
-    // THR Full Flag
-    //--------------------------------------------------------------------------------------------
-    if (reg_read_i.obi_write_thr) begin
-      thr_full_d = 1'b1;
-    end
-
-    //--------------------------------------------------------------------------------------------
-    // Reset LSR
-    //--------------------------------------------------------------------------------------------
-    if (reg_read_i.obi_write_thr) begin
-      reg_write_o.thr_empty   = 1'b0;
-      reg_write_o.tx_empty    = 1'b0;
-      reg_write_o.thr_valid   = 1'b1;
-      reg_write_o.empty_valid = 1'b1;
-    end
+  end
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
-  // Statemachine Combinational //
+  // THR Write Status Logic //
   ////////////////////////////////////////////////////////////////////////////////////////////////
+  always_comb begin : tx_thr_write_status_comb
+    reg_write_thr         = '0;
+    thr_full_write_valid  = 1'b0;
+    thr_full_write_value  = thr_full_q;
 
-    //--------------------------------------------------------------------------------------------
-    // TSR - Transmitter Shift Register (parallel to serial)
-    //--------------------------------------------------------------------------------------------
+    if (reg_read_i.obi_write_thr) begin
+      reg_write_thr.thr_empty   = 1'b0;
+      reg_write_thr.tx_empty    = 1'b0;
+      reg_write_thr.thr_valid   = 1'b1;
+      reg_write_thr.empty_valid = 1'b1;
+
+      thr_full_write_valid = 1'b1;
+      thr_full_write_value = 1'b1;
+    end
+  end
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  // TX State Machine Logic //
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  always_comb begin : tx_fsm_comb
+    state_d     = state_q;
+    txd_o       = txd_q & ~reg_read_i.lcr.set_break;
+    txd_d       = txd_q;
+    fifo_pop    = 1'b0;
+    tsr_d       = tsr_q;
+    tsr_count_d = tsr_count_q;
+    tsr_finish  = 1'b0;
+    tsr_empty   = 1'b0;
+
+    thr_full_fsm_valid = 1'b0;
+    thr_full_fsm_value = thr_full_q;
+
     if (state_q == TXDATA & (tsr_count_q <= word_len_bits)) begin
-      txd_d       = tsr_q[tsr_count_q];
+      txd_d = tsr_q[tsr_count_q];
       if (baud_rate_edge_i) begin
         tsr_count_d = tsr_count_q + 1;
-        tsr_finish  = (tsr_count_q == word_len_bits)? 1'b1 : 1'b0;
+        tsr_finish  = (tsr_count_q == word_len_bits) ? 1'b1 : 1'b0;
       end
     end
 
-    //--------------------------------------------------------------------------------------------
-    // State Transition
-    //--------------------------------------------------------------------------------------------
-    case(state_q)
+    unique case(state_q)
       TXIDLE: begin
-        txd_d       = 1'b1; // Inactive High
+        txd_d       = 1'b1;
         tsr_d       = '0;
-        tsr_count_d = 1'b0;
+        tsr_count_d = '0;
         tsr_empty   = 1'b1;
 
         if (reg_read_i.fcr.fifo_en) begin
-          if (~fifo_empty & baud_rate_edge_i) begin // Read FIFO into TSR
+          if (~fifo_empty & baud_rate_edge_i) begin
             tsr_d    = fifo_data_o;
             fifo_pop = 1'b1;
             state_d  = TXSTART;
           end
         end else begin
-          if (thr_full_q & baud_rate_edge_i) begin // Read THR into TSR
-            tsr_d      = reg_read_i.thr.char_tx & word_len_mask;
-            thr_full_d = 1'b0;
-            state_d    = TXSTART;
+          if (thr_full_q & baud_rate_edge_i) begin
+            tsr_d                = reg_read_i.thr.char_tx & word_len_mask;
+            state_d              = TXSTART;
+            thr_full_fsm_valid   = 1'b1;
+            thr_full_fsm_value   = 1'b0;
           end
         end
       end
 
       TXSTART: begin
-        txd_d   = 1'b0;
+        txd_d = 1'b0;
         if (baud_rate_edge_i) begin
           state_d = TXDATA;
         end
@@ -193,20 +197,16 @@ module obi_uart_tx #()
 
       TXDATA: begin
         if (tsr_finish) begin
-          if (reg_read_i.lcr.par_en) begin
-            state_d = TXPAR;
-          end else begin
-            state_d = TXSTOP1;
-          end
+          state_d = reg_read_i.lcr.par_en ? TXPAR : TXSTOP1;
         end
       end
 
       TXPAR: begin
-        case (reg_read_i.lcr[5:4])// Read Parity Configuration
-          2'b00: txd_d = ~(^tsr_q); // Odd Parity
-          2'b01: txd_d = ^tsr_q;    // Even Parity
-          2'b10: txd_d = 1'b1;      // Forced 1
-          2'b11: txd_d = 1'b0;      // Forced 0
+        unique case (reg_read_i.lcr[5:4])
+          2'b00: txd_d = ~(^tsr_q); // Odd parity.
+          2'b01: txd_d = ^tsr_q;    // Even parity.
+          2'b10: txd_d = 1'b1;      // Forced 1.
+          2'b11: txd_d = 1'b0;      // Forced 0.
           default: txd_d = 1'b0;
         endcase
         if (baud_rate_edge_i) begin
@@ -216,82 +216,146 @@ module obi_uart_tx #()
 
       TXSTOP1: begin
         txd_d = 1'b1;
-        if (reg_read_i.lcr.stop_bits) begin
-          // next transaction starts on next baud_rate_edge_i
-          state_d = TXIDLE;
-        end else if (baud_rate_edge_i) begin
+        if (baud_rate_edge_i) begin
+          if (reg_read_i.lcr.stop_bits) begin
             state_d = TXSTOP2;
+          end else begin
+            state_d = TXIDLE;
+          end
         end
       end
 
       TXSTOP2: begin
         txd_d = 1'b1;
         if (word_len_bits == 3'b100) begin
-          // 1.5 stop bits
-          if(double_rate_edge_i) begin
-              state_d = TXIDLE;
-              // TODO: Change active edge to the other double_rate edge to have true 1.5b stop bit
-              // Since RX is a bit flexible this still works but degreades performance minimally
-              // only for a config with 1.5b stop bits.
+          if (double_rate_edge_i) begin
+            state_d = TXIDLE;
           end
         end else begin
-          state_d = TXIDLE;
+          if (baud_rate_edge_i) begin
+            state_d = TXIDLE;
+          end
         end
       end
 
       default: state_d = TXIDLE;
     endcase
+  end
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
-  // FIFO Combinational //
+  // FIFO and Empty Status Logic //
   ////////////////////////////////////////////////////////////////////////////////////////////////
+  always_comb begin : tx_fifo_status_comb
+    reg_write_status    = '0;
+    fifo_clear          = 1'b0;
+    fifo_push           = 1'b0;
+    fifo_data_i         = '0;
+    thr_full_fifo_valid = 1'b0;
+    thr_full_fifo_value = thr_full_q;
 
     if (reg_read_i.fcr.fifo_en) begin
-      //--Reset-FIFO------------------------------------------------------------------------------
-      fifo_clear = 1'b0;
-
       if (reg_read_i.fcr.tx_fifo_rst) begin
         fifo_clear = 1'b1;
-        reg_write_o.fifo_rst       = 1'b0;
-        reg_write_o.fifo_rst_valid = 1'b1;
+        reg_write_status.fifo_rst       = 1'b0;
+        reg_write_status.fifo_rst_valid = 1'b1;
       end
 
-      //--Set-LSR---------------------------------------------------------------------------------
-      if (fifo_empty) begin
-        reg_write_o.thr_empty = 1'b1;
-        reg_write_o.thr_valid = 1'b1;
-        if (tsr_empty) begin
-          reg_write_o.tx_empty    = 1'b1;
-          reg_write_o.empty_valid = 1'b1;
-        end
-      end
-
-      //--Write-FIFO-from-THR---------------------------------------------------------------------
       if (thr_full_q & (~fifo_full)) begin
-        fifo_push   = 1'b1;
-        fifo_data_i = reg_read_i.thr.char_tx & word_len_mask;
-        thr_full_d  = 1'b0;
+        fifo_push            = 1'b1;
+        fifo_data_i          = reg_read_i.thr.char_tx & word_len_mask;
+        thr_full_fifo_valid  = 1'b1;
+        thr_full_fifo_value  = 1'b0;
       end
-    end
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-  // THR Combinational //
-  ////////////////////////////////////////////////////////////////////////////////////////////////
-
-    if (~reg_read_i.fcr.fifo_en) begin
-      //--Keep-FIFO-cleared-----------------------------------------------------------------------
-      fifo_clear = 1'b1;
-      //--Set-LSR---------------------------------------------------------------------------------
-      if (~thr_full_q) begin
-        reg_write_o.thr_empty = 1'b1;
-        reg_write_o.thr_valid = 1'b1;
+      // THRE describes the FIFO and holding register, while TEMT additionally
+      // waits for the serializer to become idle.  A pending holding-register
+      // byte is being moved into an empty FIFO when fifo_push is asserted, so
+      // do not report either empty status for that cycle.
+      if (fifo_empty && !thr_full_q && !reg_read_i.obi_write_thr && !fifo_push) begin
+        reg_write_status.thr_empty = 1'b1;
+        reg_write_status.thr_valid = 1'b1;
         if (tsr_empty) begin
-          reg_write_o.tx_empty    = 1'b1;
-          reg_write_o.empty_valid = 1'b1;
+          reg_write_status.tx_empty    = 1'b1;
+          reg_write_status.empty_valid = 1'b1;
+        end
+      end
+
+    end else begin
+      fifo_clear = 1'b1;
+      if (~thr_full_q && !reg_read_i.obi_write_thr) begin
+        reg_write_status.thr_empty = 1'b1;
+        reg_write_status.thr_valid = 1'b1;
+        if (tsr_empty) begin
+          reg_write_status.tx_empty    = 1'b1;
+          reg_write_status.empty_valid = 1'b1;
         end
       end
     end
+  end
 
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  // TX THR Write Apply Logic //
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  always_comb begin : tx_apply_thr_comb
+    reg_write_after_thr = '0;
+    thr_full_after_thr  = thr_full_q;
+
+    if (reg_write_thr.fifo_rst_valid) begin
+      reg_write_after_thr.fifo_rst       = reg_write_thr.fifo_rst;
+      reg_write_after_thr.fifo_rst_valid = 1'b1;
+    end
+    if (reg_write_thr.empty_valid) begin
+      reg_write_after_thr.tx_empty    = reg_write_thr.tx_empty;
+      reg_write_after_thr.empty_valid = 1'b1;
+    end
+    if (reg_write_thr.thr_valid) begin
+      reg_write_after_thr.thr_empty = reg_write_thr.thr_empty;
+      reg_write_after_thr.thr_valid = 1'b1;
+    end
+    if (thr_full_write_valid) begin
+      thr_full_after_thr = thr_full_write_value;
+    end
+  end
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  // TX FSM THR-Full Apply Logic //
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  always_comb begin : tx_apply_fsm_comb
+    thr_full_after_fsm = thr_full_after_thr;
+
+    if (thr_full_fsm_valid) begin
+      thr_full_after_fsm = thr_full_fsm_value;
+    end
+  end
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  // TX Status Write Apply Logic //
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  always_comb begin : tx_apply_status_comb
+    reg_write_o = reg_write_after_thr;
+    thr_full_d  = thr_full_after_fsm;
+
+    if (reg_write_status.fifo_rst_valid) begin
+      reg_write_o.fifo_rst       = reg_write_status.fifo_rst;
+      reg_write_o.fifo_rst_valid = 1'b1;
+    end
+    if (reg_write_status.empty_valid) begin
+      reg_write_o.tx_empty    = reg_write_status.tx_empty;
+      reg_write_o.empty_valid = 1'b1;
+    end
+    if (reg_write_status.thr_valid) begin
+      reg_write_o.thr_empty = reg_write_status.thr_empty;
+      reg_write_o.thr_valid = 1'b1;
+    end
+    if (thr_full_fifo_valid) begin
+      thr_full_d = thr_full_fifo_value;
+    end
+    // A CPU write is the final arbitration winner.  This permits a new byte
+    // to remain in the holding register while a previous byte is consumed or
+    // pushed into the FIFO in the same cycle.
+    if (reg_read_i.obi_write_thr) begin
+      thr_full_d = 1'b1;
+    end
   end
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
