@@ -216,11 +216,12 @@ module obi_uart_tx #()
 
       TXSTOP1: begin
         txd_d = 1'b1;
-        if (reg_read_i.lcr.stop_bits) begin
-          // Preserve the original stop-state transition timing.
-          state_d = TXIDLE;
-        end else if (baud_rate_edge_i) begin
-          state_d = TXSTOP2;
+        if (baud_rate_edge_i) begin
+          if (reg_read_i.lcr.stop_bits) begin
+            state_d = TXSTOP2;
+          end else begin
+            state_d = TXIDLE;
+          end
         end
       end
 
@@ -231,7 +232,9 @@ module obi_uart_tx #()
             state_d = TXIDLE;
           end
         end else begin
-          state_d = TXIDLE;
+          if (baud_rate_edge_i) begin
+            state_d = TXIDLE;
+          end
         end
       end
 
@@ -264,7 +267,11 @@ module obi_uart_tx #()
         thr_full_fifo_value  = 1'b0;
       end
 
-      if (fifo_empty) begin
+      // THRE describes the FIFO and holding register, while TEMT additionally
+      // waits for the serializer to become idle.  A pending holding-register
+      // byte is being moved into an empty FIFO when fifo_push is asserted, so
+      // do not report either empty status for that cycle.
+      if (fifo_empty && !thr_full_q && !reg_read_i.obi_write_thr && !fifo_push) begin
         reg_write_status.thr_empty = 1'b1;
         reg_write_status.thr_valid = 1'b1;
         if (tsr_empty) begin
@@ -275,7 +282,7 @@ module obi_uart_tx #()
 
     end else begin
       fifo_clear = 1'b1;
-      if (~thr_full_q) begin
+      if (~thr_full_q && !reg_read_i.obi_write_thr) begin
         reg_write_status.thr_empty = 1'b1;
         reg_write_status.thr_valid = 1'b1;
         if (tsr_empty) begin
@@ -342,6 +349,12 @@ module obi_uart_tx #()
     end
     if (thr_full_fifo_valid) begin
       thr_full_d = thr_full_fifo_value;
+    end
+    // A CPU write is the final arbitration winner.  This permits a new byte
+    // to remain in the holding register while a previous byte is consumed or
+    // pushed into the FIFO in the same cycle.
+    if (reg_read_i.obi_write_thr) begin
+      thr_full_d = 1'b1;
     end
   end
 

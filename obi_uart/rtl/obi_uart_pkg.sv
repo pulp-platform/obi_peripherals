@@ -43,24 +43,23 @@ package obi_uart_pkg;
   // Address Offsets //
   ////////////////////////////////////////////////////////////////////////////////////////////////
   localparam int RegWidth      = 8;
-  // Address widths used for decoding.
-  localparam int AddressBits   = 3;
-  localparam int AddressOffset = $clog2(RegAlignBytes);
+  // Internal byte address width. Seven bits preserve the original addr[6:2]
+  // decode window while retaining byte offsets 0x00-0x1c.
+  localparam int unsigned IntAddrWidth = 7;
 
-  // Register address constants. The word address is taken from addr[4:2], so
-  // higher address bits intentionally alias this register window.
-  localparam bit [AddressBits-1:0] RegAddrRHR = 3'b000;
-  localparam bit [AddressBits-1:0] RegAddrTHR = 3'b000;
-  localparam bit [AddressBits-1:0] RegAddrIER = 3'b001;
-  localparam bit [AddressBits-1:0] RegAddrISR = 3'b010;
-  localparam bit [AddressBits-1:0] RegAddrFCR = 3'b010;
-  localparam bit [AddressBits-1:0] RegAddrLCR = 3'b011;
-  localparam bit [AddressBits-1:0] RegAddrMCR = 3'b100;
-  localparam bit [AddressBits-1:0] RegAddrLSR = 3'b101;
-  localparam bit [AddressBits-1:0] RegAddrMSR = 3'b110;
-  localparam bit [AddressBits-1:0] RegAddrSPR = 3'b111;
-  localparam bit [AddressBits-1:0] RegAddrDLL = 3'b000;
-  localparam bit [AddressBits-1:0] RegAddrDLM = 3'b001;
+  // Register byte offsets. Some offsets are intentionally aliased by the 16550 DLAB bit.
+  parameter logic [IntAddrWidth-1:0] UART_RHR_OFFSET = 7'h00;
+  parameter logic [IntAddrWidth-1:0] UART_THR_OFFSET = 7'h00;
+  parameter logic [IntAddrWidth-1:0] UART_DLL_OFFSET = 7'h00;
+  parameter logic [IntAddrWidth-1:0] UART_IER_OFFSET = 7'h04;
+  parameter logic [IntAddrWidth-1:0] UART_DLM_OFFSET = 7'h04;
+  parameter logic [IntAddrWidth-1:0] UART_ISR_OFFSET = 7'h08;
+  parameter logic [IntAddrWidth-1:0] UART_FCR_OFFSET = 7'h08;
+  parameter logic [IntAddrWidth-1:0] UART_LCR_OFFSET = 7'h0c;
+  parameter logic [IntAddrWidth-1:0] UART_MCR_OFFSET = 7'h10;
+  parameter logic [IntAddrWidth-1:0] UART_LSR_OFFSET = 7'h14;
+  parameter logic [IntAddrWidth-1:0] UART_MSR_OFFSET = 7'h18;
+  parameter logic [IntAddrWidth-1:0] UART_SPR_OFFSET = 7'h1c;
 
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -215,6 +214,8 @@ package obi_uart_pkg;
     fcr_bits_t fcr;
     lcr_bits_t lcr;
     mcr_bits_t mcr;
+    lsr_bits_t lsr;
+    msr_bits_t msr;
     dll_bits_t dll;
     dlm_bits_t dlm;
     // read/write indicators
