@@ -7,6 +7,7 @@
 // - Philippe Sauter <phsauter@iis.ee.ethz.ch>
 
 `include "common_cells/registers.svh"
+`include "common_cells/assertions.svh"
 
 module obi_uart_register import obi_uart_pkg::*; #(
   /// The OBI configuration connected to this peripheral.
@@ -14,19 +15,34 @@ module obi_uart_register import obi_uart_pkg::*; #(
   /// OBI request type
   parameter type obi_req_t = logic,
   /// OBI response type
-  parameter type obi_rsp_t = logic
+  parameter type obi_rsp_t = logic,
+  /// Width of the peripheral-local byte address allocated by the system address decoder.
+  parameter int unsigned RegAddrWidth = 12
 ) (
   input logic clk_i,
   input logic rst_ni,
 
   // OBI request interface
-  input obi_req_t  obi_req_i, // a.addr, a.we, a.be, a.wdata, a.aid, a.a_optional | rready, req
+  input obi_req_t  obi_req_i, // a.addr, a.we, a.be, a.wdata, a.aid, a.a_optional | req
   // OBI response interface
   output obi_rsp_t obi_rsp_o, // r.rdata, r.rid, r.err, r.r_optional | gnt, rvalid
 
   output reg_read_t  reg_read_o,  // Current register values
   input  reg_write_t reg_write_i  // Internal updates to register values
 );
+
+  if (ObiCfg.UseRReady) begin : gen_unsupported_rready
+    $error("obi_uart does not support OBI response backpressure.");
+  end
+
+  localparam int unsigned MinRegAddrWidth = AddressOffset + AddressBits;
+
+  `ASSERT_INIT(RegAddrWidthMinimum, RegAddrWidth >= MinRegAddrWidth,
+    "RegAddrWidth must cover the complete UART register address map.")
+  `ASSERT_INIT(RegAddrWidthObiCfgMaximum, RegAddrWidth <= ObiCfg.AddrWidth,
+    "RegAddrWidth must not exceed ObiCfg.AddrWidth.")
+  `ASSERT_INIT(RegAddrWidthReqMaximum, RegAddrWidth <= $bits(obi_req_i.a.addr),
+    "RegAddrWidth must not exceed the request address width.")
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // OBI preparations
@@ -36,6 +52,7 @@ module obi_uart_register import obi_uart_pkg::*; #(
   logic                        valid_d, valid_q;
   logic                        err;
   logic                        w_err_d, w_err_q;
+  logic                        addr_valid_d, addr_valid_q;
   logic [AddressBits-1:0]      word_addr_d, word_addr_q;
   logic [ObiCfg.IdWidth-1:0]   id_d, id_q;
   logic                        we_d, we_q;
@@ -43,16 +60,27 @@ module obi_uart_register import obi_uart_pkg::*; #(
 
   assign id_d        = obi_req_i.a.aid;
   assign valid_d     = obi_req_i.req;
-  assign word_addr_d = obi_req_i.a.addr[AddressOffset+:AddressBits];
   assign we_d        = obi_req_i.a.we;
   assign req_d       = obi_req_i.req;
 
-  `FF(id_q,        id_d,        '0, clk_i, rst_ni)
-  `FF(valid_q,     valid_d,     '0, clk_i, rst_ni)
-  `FF(word_addr_q, word_addr_d, '0, clk_i, rst_ni)
-  `FF(we_q,        we_d,        '0, clk_i, rst_ni)
-  `FF(w_err_q,     w_err_d,     '0, clk_i, rst_ni)
-  `FF(req_q,       req_d,       '0, clk_i, rst_ni)
+  if ((RegAddrWidth >= MinRegAddrWidth) &&
+      (RegAddrWidth <= ObiCfg.AddrWidth) &&
+      (RegAddrWidth <= $bits(obi_req_i.a.addr))) begin : gen_valid_reg_addr_width
+    assign addr_valid_d = !(|(obi_req_i.a.addr[RegAddrWidth-1:0] >> MinRegAddrWidth)) &&
+                          !(|obi_req_i.a.addr[AddressOffset-1:0]);
+    assign word_addr_d  = obi_req_i.a.addr[AddressOffset+:AddressBits];
+  end else begin : gen_invalid_reg_addr_width
+    assign addr_valid_d = 1'b0;
+    assign word_addr_d  = '0;
+  end
+
+  `FF(id_q,         id_d,         '0, clk_i, rst_ni)
+  `FF(valid_q,      valid_d,      '0, clk_i, rst_ni)
+  `FF(addr_valid_q, addr_valid_d, '0, clk_i, rst_ni)
+  `FF(word_addr_q,  word_addr_d,  '0, clk_i, rst_ni)
+  `FF(we_q,         we_d,         '0, clk_i, rst_ni)
+  `FF(w_err_q,      w_err_d,      '0, clk_i, rst_ni)
+  `FF(req_q,        req_d,        '0, clk_i, rst_ni)
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   // Registers
@@ -144,7 +172,7 @@ module obi_uart_register import obi_uart_pkg::*; #(
     obi_read_isr = 1'b0;
     obi_read_lsr = 1'b0;
 
-    if (req_q && !we_q && !lcr_q.dlab) begin
+    if (req_q && !we_q && addr_valid_q && !lcr_q.dlab) begin
       unique case (word_addr_q)
         RegAddrRHR: obi_read_rhr = 1'b1;
         RegAddrISR: obi_read_isr = 1'b1;
@@ -158,7 +186,7 @@ module obi_uart_register import obi_uart_pkg::*; #(
     obi_write_thr  = 1'b0;
     obi_write_dllm = 1'b0;
 
-    if (obi_req_i.req && obi_req_i.a.we && obi_req_i.a.be[0]) begin
+    if (obi_req_i.req && obi_req_i.a.we && obi_req_i.a.be[0] && addr_valid_d) begin
       if (!lcr_q.dlab) begin
         obi_write_thr = word_addr_d == RegAddrTHR;
       end else begin
@@ -209,33 +237,37 @@ module obi_uart_register import obi_uart_pkg::*; #(
 
     // OBI writes use only the low byte. Invalid byte enables do not generate
     // an error, matching the original register interface.
-    if (obi_req_i.req && obi_req_i.a.we && obi_req_i.a.be[0]) begin
-      if (!lcr_q.dlab) begin
-        unique case (word_addr_d)
-          RegAddrTHR: begin
-            thr_d = obi_req_i.a.wdata[RegWidth-1:0];
-          end
-          RegAddrIER: ier_d = obi_req_i.a.wdata[RegWidth-1:0];
-          RegAddrFCR: fcr_d = obi_req_i.a.wdata[RegWidth-1:0];
-          RegAddrLCR: lcr_d = obi_req_i.a.wdata[RegWidth-1:0];
-          RegAddrMCR: mcr_d = obi_req_i.a.wdata[RegWidth-1:0];
-          RegAddrSPR: ; // Scratch register is not implemented.
-          default: w_err_d = 1'b1;
-        endcase
-      end else begin
-        unique case (word_addr_d)
-          RegAddrDLL: begin
-            dll_d = obi_req_i.a.wdata[RegWidth-1:0];
-          end
-          RegAddrDLM: begin
-            dlm_d = obi_req_i.a.wdata[RegWidth-1:0];
-          end
-          RegAddrFCR: fcr_d = obi_req_i.a.wdata[RegWidth-1:0];
-          RegAddrLCR: lcr_d = obi_req_i.a.wdata[RegWidth-1:0];
-          RegAddrMCR: mcr_d = obi_req_i.a.wdata[RegWidth-1:0];
-          RegAddrSPR: ; // Scratch register is not implemented.
-          default: w_err_d = 1'b1;
-        endcase
+    if (obi_req_i.req && obi_req_i.a.we) begin
+      if (!addr_valid_d) begin
+        w_err_d = 1'b1;
+      end else if (obi_req_i.a.be[0]) begin
+        if (!lcr_q.dlab) begin
+          unique case (word_addr_d)
+            RegAddrTHR: begin
+              thr_d = obi_req_i.a.wdata[RegWidth-1:0];
+            end
+            RegAddrIER: ier_d = obi_req_i.a.wdata[RegWidth-1:0];
+            RegAddrFCR: fcr_d = obi_req_i.a.wdata[RegWidth-1:0];
+            RegAddrLCR: lcr_d = obi_req_i.a.wdata[RegWidth-1:0];
+            RegAddrMCR: mcr_d = obi_req_i.a.wdata[RegWidth-1:0];
+            RegAddrSPR: ; // Scratch register is not implemented.
+            default: w_err_d = 1'b1;
+          endcase
+        end else begin
+          unique case (word_addr_d)
+            RegAddrDLL: begin
+              dll_d = obi_req_i.a.wdata[RegWidth-1:0];
+            end
+            RegAddrDLM: begin
+              dlm_d = obi_req_i.a.wdata[RegWidth-1:0];
+            end
+            RegAddrFCR: fcr_d = obi_req_i.a.wdata[RegWidth-1:0];
+            RegAddrLCR: lcr_d = obi_req_i.a.wdata[RegWidth-1:0];
+            RegAddrMCR: mcr_d = obi_req_i.a.wdata[RegWidth-1:0];
+            RegAddrSPR: ; // Scratch register is not implemented.
+            default: w_err_d = 1'b1;
+          endcase
+        end
       end
     end
 
@@ -244,7 +276,9 @@ module obi_uart_register import obi_uart_pkg::*; #(
     // during the response phase in the original implementation.
     if (req_q && !we_q) begin
       err = 1'b0;
-      if (!lcr_q.dlab) begin
+      if (!addr_valid_q) begin
+        err = 1'b1;
+      end else if (!lcr_q.dlab) begin
         unique case (word_addr_q)
           RegAddrRHR: begin
             rsp_data[RegWidth-1:0] = rhr_q;

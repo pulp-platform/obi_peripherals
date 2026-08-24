@@ -60,8 +60,7 @@ package obi_uart_pkg;
   localparam int AddressBits   = 3;
   localparam int AddressOffset = $clog2(RegAlignBytes);
 
-  // Register address constants. The word address is taken from addr[4:2], so
-  // higher address bits intentionally alias this register window.
+  // Register selector constants for the legacy 0x00 through 0x1c register map.
   localparam bit [AddressBits-1:0] RegAddrRHR = 3'b000;
   localparam bit [AddressBits-1:0] RegAddrTHR = 3'b000;
   localparam bit [AddressBits-1:0] RegAddrIER = 3'b001;

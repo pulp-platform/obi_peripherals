@@ -14,13 +14,15 @@ module obi_uart #(
   /// OBI request type
   parameter type obi_req_t = obi_uart_pkg::obi_uart_req_t,
   /// OBI response type
-  parameter type obi_rsp_t = obi_uart_pkg::obi_uart_rsp_t
+  parameter type obi_rsp_t = obi_uart_pkg::obi_uart_rsp_t,
+  /// Width of the peripheral-local byte address allocated by the system address decoder.
+  parameter int unsigned RegAddrWidth = 12
 ) (
   input logic      clk_i,  // Primary input clock
   input logic      rst_ni, // Asynchronous active-low reset
 
   // OBI request interface
-  input  obi_req_t obi_req_i, // a.addr, a.we, a.be, a.wdata, a.aid, a.a_optional | rready, req
+  input  obi_req_t obi_req_i, // a.addr, a.we, a.be, a.wdata, a.aid, a.a_optional | req
   // OBI response interface
   output obi_rsp_t obi_rsp_o, // r.rdata, r.rid, r.err, r.r_optional | gnt, rvalid
 
@@ -65,8 +67,10 @@ module obi_uart #(
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   obi_uart_register #(
-    .obi_req_t (obi_req_t),
-    .obi_rsp_t (obi_rsp_t)
+    .ObiCfg       (ObiCfg),
+    .RegAddrWidth (RegAddrWidth),
+    .obi_req_t    (obi_req_t),
+    .obi_rsp_t    (obi_rsp_t)
   ) i_uart_register (
     .clk_i,
     .rst_ni,

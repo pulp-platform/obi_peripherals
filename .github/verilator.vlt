@@ -13,17 +13,16 @@ lint_off -rule PINCONNECTEMPTY -file "*obi_uart_rx.sv" -match "*'overflow_o'*"
 lint_off -rule UNUSEDSIGNAL -file "*obi_uart_baudgen.sv" -match "*'baud_count'*"
 lint_off -rule UNUSEDSIGNAL -file "*obi_uart_tx.sv" -match "*'fifo_usage'*"
 
-// Preserve the public configuration parameter and shared packed interfaces.
-lint_off -rule UNUSEDPARAM -file "*obi_uart.sv" -match "*'ObiCfg'*"
+// Shared packed interfaces contain fields that are used by other UART blocks.
+lint_off -rule UNUSEDSIGNAL -file "*obi_uart_register.sv" -match "*'obi_req_i'[0]*"
 lint_off -rule UNUSEDSIGNAL -file "*obi_uart_baudgen.sv" -match "*'reg_read_i'*"
 lint_off -rule UNUSEDSIGNAL -file "*obi_uart_interrupts.sv" -match "*'reg_read_i'*"
 lint_off -rule UNUSEDSIGNAL -file "*obi_uart_interrupts.sv" -match "*'reg_write_i'*"
 lint_off -rule UNUSEDSIGNAL -file "*obi_uart_modem.sv" -match "*'reg_read_i'*"
 lint_off -rule UNUSEDSIGNAL -file "*obi_uart_rx.sv" -match "*'reg_read_i'*"
 lint_off -rule UNUSEDSIGNAL -file "*obi_uart_tx.sv" -match "*'reg_read_i'*"
-lint_off -rule UNUSEDSIGNAL -file "*obi_uart_register.sv" -match "*'obi_req_i'*"
 
-// These warnings come from existing RTL that is unchanged by this verification update.
+// RX and TX control warnings are scoped to their dedicated refactors.
 lint_off -rule WIDTHEXPAND -file "*obi_uart_rx.sv" -match "*'word_len_bits'*"
 lint_off -rule WIDTHEXPAND -file "*obi_uart_tx.sv" -match "*Operator ASSIGN expects 3 bits on the Assign RHS*"
 lint_off -rule WIDTHTRUNC -file "*obi_uart_rx.sv" -match "*Operator ASSIGN expects 4 bits on the Assign RHS*"
