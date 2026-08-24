@@ -83,7 +83,7 @@ module obi_uart_modem import obi_uart_pkg::*; #()
   // Modem Input/Output and Loopback //
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  always_comb begin
+  always_comb begin : modem_control_comb
     if(reg_read_i.mcr.loopback == 1'b1) begin
       rts_no  = 1'b1;
       dtr_no  = 1'b1;

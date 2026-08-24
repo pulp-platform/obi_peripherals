@@ -56,11 +56,11 @@ package obi_uart_pkg;
   // Address Offsets //
   ////////////////////////////////////////////////////////////////////////////////////////////////
   localparam int RegWidth      = 8;
-  // Address widths used for decoding
+  // Address widths used for decoding.
   localparam int AddressBits   = 3;
   localparam int AddressOffset = $clog2(RegAlignBytes);
 
-  // Register Address Offsets
+  // Register selector constants for the legacy 0x00 through 0x1c register map.
   localparam bit [AddressBits-1:0] RegAddrRHR = 3'b000;
   localparam bit [AddressBits-1:0] RegAddrTHR = 3'b000;
   localparam bit [AddressBits-1:0] RegAddrIER = 3'b001;
@@ -73,7 +73,6 @@ package obi_uart_pkg;
   localparam bit [AddressBits-1:0] RegAddrSPR = 3'b111;
   localparam bit [AddressBits-1:0] RegAddrDLL = 3'b000;
   localparam bit [AddressBits-1:0] RegAddrDLM = 3'b001;
-  //localparam bit [AddressBits-1:0] RegAddrPSD = 3'b101;
 
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
