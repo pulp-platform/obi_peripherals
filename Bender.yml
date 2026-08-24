@@ -1,6 +1,6 @@
 # Copyright 2025 ETH Zurich and University of Bologna.
-# Solderpad Hardware License, Version 0.51, see LICENSE for details.
-# SPDX-License-Identifier: SHL-0.51
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
 
 package:
   name: obi_peripherals
@@ -22,3 +22,7 @@ sources:
   - obi_uart/rtl/obi_uart_tx.sv
   - obi_uart/rtl/obi_uart_register.sv
   - obi_uart/rtl/obi_uart.sv
+
+  - target: any(test, simulation, verilator)
+    files:
+      - obi_uart/test/tb_obi_uart.sv
