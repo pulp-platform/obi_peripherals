@@ -1,0 +1,33 @@
+// Copyright 2026 ETH Zurich and University of Bologna.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+`verilator_config
+
+// Dependencies are linted in their own repositories.
+lint_off -file "*.bender/*"
+
+// These counter outputs are not needed by the UART implementation.
+lint_off -rule PINCONNECTEMPTY -file "*obi_uart_baudgen.sv" -match "*'overflow_o'*"
+lint_off -rule PINCONNECTEMPTY -file "*obi_uart_rx.sv" -match "*'overflow_o'*"
+lint_off -rule UNUSEDSIGNAL -file "*obi_uart_baudgen.sv" -match "*'baud_count'*"
+lint_off -rule UNUSEDSIGNAL -file "*obi_uart_tx.sv" -match "*'fifo_usage'*"
+
+// Preserve the public configuration parameter and shared packed interfaces.
+lint_off -rule UNUSEDPARAM -file "*obi_uart.sv" -match "*'ObiCfg'*"
+lint_off -rule UNUSEDSIGNAL -file "*obi_uart_baudgen.sv" -match "*'reg_read_i'*"
+lint_off -rule UNUSEDSIGNAL -file "*obi_uart_interrupts.sv" -match "*'reg_read_i'*"
+lint_off -rule UNUSEDSIGNAL -file "*obi_uart_interrupts.sv" -match "*'reg_write_i'*"
+lint_off -rule UNUSEDSIGNAL -file "*obi_uart_modem.sv" -match "*'reg_read_i'*"
+lint_off -rule UNUSEDSIGNAL -file "*obi_uart_rx.sv" -match "*'reg_read_i'*"
+lint_off -rule UNUSEDSIGNAL -file "*obi_uart_tx.sv" -match "*'reg_read_i'*"
+lint_off -rule UNUSEDSIGNAL -file "*obi_uart_register.sv" -match "*'obi_req_i'*"
+
+// These warnings come from existing RTL that is unchanged by this verification update.
+lint_off -rule WIDTHEXPAND -file "*obi_uart_rx.sv" -match "*'word_len_bits'*"
+lint_off -rule WIDTHEXPAND -file "*obi_uart_tx.sv" -match "*Operator ASSIGN expects 3 bits on the Assign RHS*"
+lint_off -rule WIDTHTRUNC -file "*obi_uart_rx.sv" -match "*Operator ASSIGN expects 4 bits on the Assign RHS*"
+lint_off -rule ALWCOMBORDER -file "*obi_uart_rx.sv" -match "*'break_d'*"
+lint_off -rule ALWCOMBORDER -file "*obi_uart_rx.sv" -match "*'word_len_bits'*"
+lint_off -rule UNOPTFLAT -file "*obi_uart_rx.sv" -match "*break_d*"
+lint_off -rule UNOPTFLAT -file "*obi_uart_rx.sv" -match "*word_len_bits*"

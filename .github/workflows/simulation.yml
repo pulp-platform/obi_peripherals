@@ -1,0 +1,39 @@
+# Copyright 2026 ETH Zurich and University of Bologna.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: simulation
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verilator:
+    name: Verilator regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: ghcr.io/phsauter/oseda-cli:2026.07
+      options: --user 0
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Report tool versions
+        shell: bash
+        run: |
+          if ! verilator --version; then
+            verilator verilator --version
+          fi
+          bender --version
+      - name: Run Verilator regression
+        shell: bash
+        env:
+          VERILATOR_JOBS: 2
+        run: scripts/run_checks.sh --verilator obi_uart

@@ -1,34 +1,101 @@
-# Copyright 2025 ETH Zurich and University of Bologna.
+# Copyright 2026 ETH Zurich and University of Bologna.
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
-# Author: Nils Wistoff <nwistoff@iis.ee.ethz.ch>
-
 name: lint
 
-on: [ push, pull_request, workflow_dispatch ]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  lint-license:
+  license:
+    name: License
     runs-on: ubuntu-latest
     steps:
-      - name: lint license
-        uses: pulp-platform/pulp-actions/lint-license@v2.4.3
+      - name: Check license notices
+        uses: pulp-platform/pulp-actions/lint-license@v2.5.1
         with:
           license: |
             Copyright (\d{4}(-\d{4})?\s)?(ETH Zurich and University of Bologna|lowRISC contributors).
             (Solderpad Hardware License, Version 0.51|Licensed under the Apache License, Version 2.0), see LICENSE for details.
             SPDX-License-Identifier: (SHL-0.51|Apache-2.0)
 
-  lint-sv:
+  slang:
+    name: Slang elaboration
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Install Bender
+        uses: pulp-platform/pulp-actions/bender-install@v2.5.1
+      - name: Generate source list
+        shell: bash
+        run: |
+          bender checkout
+          source scripts/common.sh
+          generate_flist sources.flist --relative-path --top obi_uart -t rtl
+      - name: Run Slang elaboration
+        uses: pulp-platform/pulp-actions/slang@v2.5.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          reviewdog-name: slang-elaboration
+          slang-flags: "--top obi_uart -F sources.flist"
+
+  verible:
+    name: Verible lint
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-    - name: Run Verible
-      uses: chipsalliance/verible-linter-action@main
-      with:
-        paths: .
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        fail_on_error: true
-        reviewdog_reporter: github-check
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Install Verible
+        run: |
+          set -euo pipefail
+          verible_version="v0.0-4080-ga0a8d8eb"
+          install_dir="${RUNNER_TEMP}/verible"
+          mkdir -p "${install_dir}"
+          curl -fsSL \
+            "https://github.com/chipsalliance/verible/releases/download/${verible_version}/verible-${verible_version}-linux-static-x86_64.tar.gz" \
+            | tar -xz -C "${install_dir}" --strip-components=1
+          echo "${install_dir}/bin" >> "${GITHUB_PATH}"
+      - name: Add Verible problem matcher
+        run: echo "::add-matcher::.github/verible-lint-matcher.json"
+      - name: Run Verible lint
+        run: scripts/run_verible_lint.sh
+      - name: Remove Verible problem matcher
+        if: always()
+        run: echo "::remove-matcher owner=verible-lint-matcher::"
+
+  verilator:
+    name: Verilator lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Install Verilator
+        uses: veryl-lang/setup-verilator@v1
+        with:
+          version: 5.048
+      - name: Install Bender
+        uses: pulp-platform/pulp-actions/bender-install@v2.5.1
+      - name: Run Verilator lint
+        shell: bash
+        run: |
+          bender checkout
+          source scripts/common.sh
+          generate_flist sources.flist --relative-path --top obi_uart -t rtl \
+            -D VERILATOR=1 -D COMMON_CELLS_ASSERTS_OFF=1
+          verilator --lint-only --timing -Wall \
+            --top-module obi_uart \
+            .github/verilator.vlt \
+            -f sources.flist
