@@ -1,0 +1,18 @@
+# Copyright 2026 ETH Zurich and University of Bologna.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+services:
+  eda-tools:
+    image: hpretl/iic-osic-tools:2026.06
+    environment:
+      - UID=${UID}
+      - GID=${GID}
+    user: "${UID}:${GID}"
+    volumes:
+      - ./:/workspace/obi_peripherals
+    stdin_open: true
+    tty: true
+    working_dir: /workspace/obi_peripherals
+    entrypoint: /dockerstartup/scripts/ui_startup.sh
+    command: --skip bash
