@@ -6,7 +6,20 @@
 // - Hannah Pochert  <hpochert@ethz.ch>
 // - Philippe Sauter <phsauter@iis.ee.ethz.ch>
 
+`include "obi/typedef.svh"
+
 package obi_uart_pkg;
+
+  localparam obi_pkg::obi_cfg_t DefaultObiCfg = obi_pkg::ObiDefaultConfig;
+
+  `OBI_TYPEDEF_MINIMAL_A_OPTIONAL(obi_uart_a_optional_t)
+  `OBI_TYPEDEF_A_CHAN_T(obi_uart_a_chan_t, DefaultObiCfg.AddrWidth, DefaultObiCfg.DataWidth,
+      DefaultObiCfg.IdWidth, obi_uart_a_optional_t)
+  `OBI_TYPEDEF_REQ_T(obi_uart_req_t, obi_uart_a_chan_t)
+  `OBI_TYPEDEF_MINIMAL_R_OPTIONAL(obi_uart_r_optional_t)
+  `OBI_TYPEDEF_R_CHAN_T(obi_uart_r_chan_t, DefaultObiCfg.DataWidth, DefaultObiCfg.IdWidth,
+      obi_uart_r_optional_t)
+  `OBI_TYPEDEF_RSP_T(obi_uart_rsp_t, obi_uart_r_chan_t)
 
   //-- Configurable values -----------------------------------------------------------------------
   localparam int RegAlignBytes = 4; // regs aligned to this many bytes (4 -> 32-bit aligned)

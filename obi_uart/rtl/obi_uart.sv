@@ -12,9 +12,9 @@ module obi_uart #(
   /// The OBI configuration connected to this peripheral.
   parameter obi_pkg::obi_cfg_t ObiCfg = obi_pkg::ObiDefaultConfig, // SbrObiCfg
   /// OBI request type
-  parameter type obi_req_t = logic,
+  parameter type obi_req_t = obi_uart_pkg::obi_uart_req_t,
   /// OBI response type
-  parameter type obi_rsp_t = logic
+  parameter type obi_rsp_t = obi_uart_pkg::obi_uart_rsp_t
 ) (
   input logic      clk_i,  // Primary input clock
   input logic      rst_ni, // Asynchronous active-low reset
