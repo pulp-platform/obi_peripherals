@@ -1,7 +1,7 @@
-diff --git a/hw/obi_uart/obi_uart.sv b/hw/obi_uart/obi_uart.sv
-index 8d10da6..a727b6b 100644
---- a/hw/obi_uart/obi_uart.sv
-+++ b/hw/obi_uart/obi_uart.sv
+diff --git a/obi_uart/rtl/obi_uart.sv b/obi_uart/rtl/obi_uart.sv
+index b27d1c4..6f109d1 100644
+--- a/obi_uart/rtl/obi_uart.sv
++++ b/obi_uart/rtl/obi_uart.sv
 @@ -9,12 +9,12 @@
  // `include "common_cells/registers.svh"
  
@@ -9,22 +9,22 @@ index 8d10da6..a727b6b 100644
 -  /// The OBI configuration connected to this peripheral.
 -  parameter obi_pkg::obi_cfg_t ObiCfg = obi_pkg::ObiDefaultConfig, // SbrObiCfg
 -  /// OBI request type
--  parameter type obi_req_t = logic,
+-  parameter type obi_req_t = obi_uart_pkg::obi_uart_req_t,
 -  /// OBI response type
--  parameter type obi_rsp_t = logic
+-  parameter type obi_rsp_t = obi_uart_pkg::obi_uart_rsp_t
 +  // /// The OBI configuration connected to this peripheral.
 +  // parameter obi_pkg::obi_cfg_t ObiCfg = obi_pkg::ObiDefaultConfig, // SbrObiCfg
 +  // /// OBI request type
-+  // parameter type obi_req_t = logic,
++  // parameter type obi_req_t = obi_uart_pkg::obi_uart_req_t,
 +  // /// OBI response type
-+  // parameter type obi_rsp_t = logic
++  // parameter type obi_rsp_t = obi_uart_pkg::obi_uart_rsp_t
  ) (
    input logic      clk_i,  // Primary input clock
    input logic      rst_ni, // Asynchronous active-low reset
-diff --git a/hw/obi_uart/obi_uart_register.sv b/hw/obi_uart/obi_uart_register.sv
+diff --git a/obi_uart/rtl/obi_uart_register.sv b/obi_uart/rtl/obi_uart_register.sv
 index 349638f..20859aa 100644
---- a/hw/obi_uart/obi_uart_register.sv
-+++ b/hw/obi_uart/obi_uart_register.sv
+--- a/obi_uart/rtl/obi_uart_register.sv
++++ b/obi_uart/rtl/obi_uart_register.sv
 @@ -9,12 +9,12 @@
  // `include "common_cells/registers.svh"
  
