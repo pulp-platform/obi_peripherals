@@ -15,7 +15,6 @@ module tb_obi_uart;
 
   localparam logic [7:0] LcrDlab = 8'h80;
   localparam logic [7:0] Lcr8N1  = 8'h03;
-  localparam int unsigned ClksPerBit = 32;
 
   logic clk;
   logic rst_n;
@@ -103,36 +102,36 @@ module tb_obi_uart;
     obi_req = idle_req();
   endtask
 
-  task automatic configure_uart();
+  task automatic configure_uart(input logic [7:0] divisor);
     obi_write(RegLcr, LcrDlab);
-    obi_write(RegRhrThrDll, 8'h02);
+    obi_write(RegRhrThrDll, divisor);
     obi_write(RegIerDlm, 8'h00);
     obi_write(RegLcr, Lcr8N1);
   endtask
 
-  task automatic check_tx_byte(input logic [7:0] data);
+  task automatic check_tx_byte(input logic [7:0] data, input int unsigned clks_per_bit);
     logic [9:0] frame;
     frame = {1'b1, data, 1'b0};
 
     wait (txd == 1'b0);
-    repeat (ClksPerBit / 2) @(negedge clk);
+    repeat (clks_per_bit / 2) @(negedge clk);
     for (int unsigned bit_idx = 0; bit_idx < 10; bit_idx++) begin
       assert (txd == frame[bit_idx])
         else $fatal(1, "TX bit %0d was %0b, expected %0b", bit_idx, txd, frame[bit_idx]);
       if (bit_idx != 9) begin
-        repeat (ClksPerBit) @(negedge clk);
+        repeat (clks_per_bit) @(negedge clk);
       end
     end
   endtask
 
-  task automatic drive_rx_byte(input logic [7:0] data);
+  task automatic drive_rx_byte(input logic [7:0] data, input int unsigned clks_per_bit);
     logic [9:0] frame;
     frame = {1'b1, data, 1'b0};
 
     @(negedge clk);
     for (int unsigned bit_idx = 0; bit_idx < 10; bit_idx++) begin
       rxd = frame[bit_idx];
-      repeat (ClksPerBit) @(negedge clk);
+      repeat (clks_per_bit) @(negedge clk);
     end
     rxd = 1'b1;
   endtask
@@ -151,6 +150,32 @@ module tb_obi_uart;
     $fatal(1, "LSR did not reach mask %02x == %02x", mask, expected);
   endtask
 
+  task automatic check_baud_rates(input int unsigned divisor);
+    int unsigned samples = 0;
+    int unsigned doubles = 0;
+    int unsigned bits = 0;
+    int last_bit = -1;
+
+    repeat (32 * divisor) @(negedge clk);
+    for (int cycle = 0; cycle < 256 * int'(divisor); cycle++) begin
+      @(negedge clk);
+      if (i_dut.oversample_rate_edge) samples++;
+      if (i_dut.double_rate_edge) doubles++;
+      if (i_dut.baud_rate_edge) begin
+        bits++;
+        if (last_bit >= 0 && cycle - last_bit != 16 * int'(divisor)) begin
+          $fatal(1, "Divisor %0d baud interval was %0d, expected %0d clocks",
+                 divisor, cycle - last_bit, 16 * divisor);
+        end
+        last_bit = cycle;
+      end
+    end
+    if (samples != 256 || doubles != 32 || bits != 16) begin
+      $fatal(1, "Divisor %0d enables were %0d/%0d/%0d, expected 256/32/16",
+             divisor, samples, doubles, bits);
+    end
+  endtask
+
   initial begin
     logic [7:0] data;
 
@@ -163,19 +188,23 @@ module tb_obi_uart;
     rst_n = 1'b1;
     repeat (2) @(negedge clk);
 
-    configure_uart();
+    for (int unsigned divisor = 2; divisor > 0; divisor--) begin
+      configure_uart(8'(divisor));
+      check_baud_rates(divisor);
 
-    fork
-      check_tx_byte(8'ha5);
-      obi_write(RegRhrThrDll, 8'ha5);
-    join
-    wait_for_lsr(8'h60, 8'h60);
+      fork
+        check_tx_byte(8'ha5, 16 * divisor);
+        obi_write(RegRhrThrDll, 8'ha5);
+      join
+      wait_for_lsr(8'h60, 8'h60);
 
-    drive_rx_byte(8'h5a);
-    wait_for_lsr(8'h01, 8'h01);
-    obi_read(RegRhrThrDll, data);
-    assert (data == 8'h5a)
-      else $fatal(1, "Received %02x, expected 5a", data);
+      drive_rx_byte(8'h5a, 16 * divisor);
+      wait_for_lsr(8'h01, 8'h01);
+      obi_read(RegRhrThrDll, data);
+      assert (data == 8'h5a)
+        else $fatal(1, "Received %02x, expected 5a", data);
+      $display("obi_uart divisor %0d baud, transmit and receive tests passed", divisor);
+    end
 
     $display("obi_uart basic transmit and receive test passed");
     $finish;

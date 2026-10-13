@@ -52,8 +52,8 @@ module obi_uart_baudgen import obi_uart_pkg::*; #()
   // Concatenate most significant byte and least significant byte of Divisor
   // -1 since we clear to zero when reaching divisor, takes one cycle
   assign divisor = {reg_read_i.dlm, reg_read_i.dll} - 16'd1;
-  // divisor reset value is 0 and per the 16550A formula it has no meaning -> invalid
-  assign divisor_valid = ~(divisor == 0);
+  // A programmed divisor of zero has no meaning in the 16550A formula.
+  assign divisor_valid = ({reg_read_i.dlm, reg_read_i.dll} != 16'd0);
   assign oversample_is_divisor = (oversample_count == divisor) & divisor_valid;
   // clear on reaching the divisor or when configuration changes
   assign oversample_clear = oversample_is_divisor | reg_read_i.obi_write_dllm;
@@ -82,6 +82,8 @@ module obi_uart_baudgen import obi_uart_pkg::*; #()
   // Counts when oversample hits target, counter has the new value in the next cycle
   // the same cycle when oversample_rate_edge_o goes high
 
+  // Clear on the terminal tick so divisor 1 does not lose a count cycle.
+  assign baud_count_overflow = (baud_count == 4'hf) & oversample_is_divisor;
   assign baud_clear = baud_count_overflow | reg_read_i.obi_write_dllm;
 
   counter #(
@@ -96,12 +98,11 @@ module obi_uart_baudgen import obi_uart_pkg::*; #()
     .down_i    ( 1'b0                  ), // Count upwards
     .d_i       ( '0                    ),
     .q_o       ( baud_count            ),
-    .overflow_o( baud_count_overflow   )
+    .overflow_o(                      )
   );
 
-  // oversample hits target, counter overflows on the next clock cycle and then clears itself
-  // therefore baud_rate_edge_o is high in the same cycle as oversample_rate_edge_o
-  assign baud_rate_edge_o = baud_count_overflow;
+  // Register the terminal tick to align the baud and oversample enables.
+  `FF(baud_rate_edge_o, baud_count_overflow, '0, clk_i, rst_ni)
 
   // Double baud rate directly generated from baudrate counter
   assign count_is_double    = (baud_count[2:0] == '0); // last three bits zero
