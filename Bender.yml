@@ -26,3 +26,4 @@ sources:
   - target: any(test, simulation, verilator)
     files:
       - obi_uart/test/tb_obi_uart.sv
+      - obi_uart/test/tb_obi_uart_rx.sv

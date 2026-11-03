@@ -285,10 +285,10 @@ module obi_uart_rx import obi_uart_pkg::*; #()
       reg_write_o.par_err       = 1'b0;
       reg_write_o.frame_err     = 1'b0;
       reg_write_o.break_ind  = 1'b0;
-      reg_write_o.overrun_valid = 1'b0;
-      reg_write_o.par_valid     = 1'b0;
-      reg_write_o.frame_valid   = 1'b0;
-      reg_write_o.break_valid   = 1'b0;
+      reg_write_o.overrun_valid = 1'b1;
+      reg_write_o.par_valid     = 1'b1;
+      reg_write_o.frame_valid   = 1'b1;
+      reg_write_o.break_valid   = 1'b1;
       if (fifo_error_index_q == 4'b0000) begin
         reg_write_o.fifo_err       = 1'b0;
         reg_write_o.fifo_err_valid = 1'b1;
@@ -357,13 +357,13 @@ module obi_uart_rx import obi_uart_pkg::*; #()
       RXIDLE: begin
         if (filtered_rxd_q & ~sync_rxd) begin // falling edge
           state_d = RXSTART;
-          timing_init_clear = 1'b0;
           if (oversample_rate_edge_i) begin
             timing_load   = 1'b1;
             timing_offset = 5'b00010; // If first cycle not detected: Set Timing Counter to 2
           end
+        end else begin
+          timing_init_clear = 1'b1;
         end
-        timing_init_clear = 1'b1;
       end
 
       RXSTART: begin
@@ -396,7 +396,7 @@ module obi_uart_rx import obi_uart_pkg::*; #()
 
       RXSTOP: begin
         if (stop_finish) begin
-          if (framing_err_q) begin
+          if (framing_err_d) begin
             state_d = RXRESYNCHRONIZE;
           end else begin
             state_d = RXIDLE;
@@ -464,9 +464,8 @@ module obi_uart_rx import obi_uart_pkg::*; #()
         reg_write_o.data_ready   = 1'b1; // Set Data Ready Bit
         reg_write_o.dr_valid     = 1'b1;
         reg_write_o.par_err      = parity_err_q;
-        reg_write_o.frame_err    = framing_err_q;
+        reg_write_o.frame_err    = framing_err_d;
         reg_write_o.break_ind    = break_interrupt;
-        reg_write_o.break_ind    = 1'b1;
         reg_write_o.break_valid  = 1'b1;
         reg_write_o.par_valid    = 1'b1;
         reg_write_o.frame_valid  = 1'b1;
@@ -512,9 +511,9 @@ module obi_uart_rx import obi_uart_pkg::*; #()
           reg_write_o.overrun_valid = 1'b1;
         end else begin
           fifo_push       = 1'b1;
-          fifo_data_i     = {parity_err_q, framing_err_q, break_interrupt, rsr_q}; // 11 Bits
+          fifo_data_i     = {parity_err_q, framing_err_d, break_interrupt, rsr_q}; // 11 Bits
 
-          if (parity_err_q | framing_err_q | break_interrupt) begin
+          if (parity_err_q | framing_err_d | break_interrupt) begin
             fifo_error_index_d         = fifo_usage;
             reg_write_o.fifo_err       = 1'b1;
             reg_write_o.fifo_err_valid = 1'b1;
