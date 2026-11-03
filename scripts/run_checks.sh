@@ -47,6 +47,10 @@ run_verilator_test() {
   ip=$1
   run_cmd "${OBI_PERIPHERALS_ROOT}/flow/verilator/run_verilator.sh" \
     "$ip" --build --run
+  if [ "$ip" = obi_uart ]; then
+    run_cmd "${OBI_PERIPHERALS_ROOT}/flow/verilator/run_verilator.sh" \
+      "$ip" --top tb_obi_uart_rx --build --run
+  fi
 }
 
 while [ "$#" -gt 0 ]; do
