@@ -25,6 +25,7 @@
  *                                                                                                  *
  ****************************************************************************************************/
 
+(* keep_redundancy *)
 module obi_uart_registerTMR import obi_uart_pkg::*; #(
   /// The OBI configuration connected to this peripheral.
   parameter obi_pkg::obi_cfg_t ObiCfg = obi_pkg::ObiDefaultConfig, // SbrObiCfg

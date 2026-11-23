@@ -25,6 +25,7 @@
  *                                                                                                  *
  ****************************************************************************************************/
 
+(* keep_redundancy *)
 module syncTMR #(
   parameter int unsigned STAGES = 2,
   parameter bit ResetValue = 1'b0

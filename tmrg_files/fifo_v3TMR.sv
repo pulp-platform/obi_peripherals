@@ -25,6 +25,7 @@
  *                                                                                                  *
  ****************************************************************************************************/
 
+(* keep_redundancy *)
 module fifo_v3TMR #(
   parameter bit FALL_THROUGH = 1'b0,
   parameter int unsigned DATA_WIDTH = 32,

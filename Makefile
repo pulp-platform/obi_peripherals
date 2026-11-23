@@ -21,4 +21,5 @@ tmrg:
 	git apply -R obi_types_comment.patch
 	git apply tmrg_obi_types_fix.patch
 	git apply tmrg_counter_overflow.patch
+	sed -i -E 's/^module (\w+TMR\b)/(* keep_redundancy *)\nmodule \1/' tmrg_files/*TMR.sv
 

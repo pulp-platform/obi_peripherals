@@ -25,6 +25,7 @@
  *                                                                                                  *
  ****************************************************************************************************/
 
+(* keep_redundancy *)
 module delta_counterTMR #(
   parameter int unsigned WIDTH = 4,
   parameter bit STICKY_OVERFLOW = 1'b0

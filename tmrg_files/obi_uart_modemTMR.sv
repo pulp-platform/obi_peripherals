@@ -25,6 +25,7 @@
  *                                                                                                  *
  ****************************************************************************************************/
 
+(* keep_redundancy *)
 module obi_uart_modemTMR import obi_uart_pkg::*; (
   input logic clk_i,
   input logic rst_ni,
